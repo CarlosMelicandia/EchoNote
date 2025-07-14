@@ -24,3 +24,6 @@ env/
 
 #Audio uploads
 /uploads
+
+#Google STT API json file
+/sensitive-credentials
