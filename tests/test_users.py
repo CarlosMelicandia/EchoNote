@@ -1,7 +1,7 @@
 import unittest, sys, os
 
 sys.path.append('../EchoNote')
-from main_py_file_name import app, db
+from app import app, db
 
 class UsersTests(unittest.TestCase):
 
