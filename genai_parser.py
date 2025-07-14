@@ -1,6 +1,14 @@
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+import json
+import re
+
+'''re = regular expressions ; cleans up text patterns --> when run w/o, output is messy. example below
+"tasks": "```json\n[\n  {\n    \"text\": \"Finish the report\",\n   
+ \"due\": \"Monday\"\n  },\n  {\n    \"text\": \"Email report to the team\",\n   
+  \"due\": \"Monday\"\n  }\n]\n```"
+'''
 
 class TaskParser:
     def __init__(self):
@@ -16,7 +24,9 @@ class TaskParser:
 
         try:
             response = self.model.generate_content(full_prompt)
-            return response.text.strip()
+            original = response.text.strip()
+            clean_it = re.sub(r"```json|```", "", original).strip()
+            return json.loads(clean_it)
         except Exception as e:
             print("Error parsing transcript:", e)
             return "[]"
