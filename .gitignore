@@ -21,3 +21,7 @@ env/
 # Logs
 *.log
 .env
+
+# Ignore Google service account key
+gcloud_credentials/
+*.json
