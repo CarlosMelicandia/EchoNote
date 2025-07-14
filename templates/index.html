@@ -7,6 +7,43 @@
 </head>
 <body>
 <h1>My Notes</h1>
+<button id="btn-record">Start Recording</button>
+<button id="btn-stop" disabled>Stop Recording</button>
+<textarea id="transcript" placeholders="Transcript appears here..."></textarea>
+
+<script>
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(
+        stream => {
+            const recorder = new MediaRecorder(stream);
+            let chunks = [];
+
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm'});
+                chunks = [];
+
+                const form = new FormData();
+                form.append('audio', blob, 'recording.webm')
+
+                const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                const { transcript } = await res.json();
+                document.getElementById('transcript').value = transcript;
+            };
+
+            document.getElementById('btn-record').onclick = () => {
+                recorder.start();
+                document.getElementById('btn-record').disabled = true;
+                document.getElementById('btn-stop').disabled = false;
+            };
+            document.getElementById('btn-stop').onclick = () => {
+                recorder.stop()
+                document.getElementById('btn-record').disabled = false;
+                document.getElementById('btn-stop').disabled = true;
+            };
+        }
+    )
+    .catch(console.error);
+</script>
 
 <form method="POST">
     <textarea name="content" rows="4" cols="50" placeholder="Write a note..."></textarea><br>
