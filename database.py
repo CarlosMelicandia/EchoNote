@@ -18,14 +18,19 @@ class Task(Base):
     name = Column(String(255), nullable=False)
     completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
     def __repr__(self):
         return f"<Task(id={self.id}, name='{self.name}', completed={self.completed})>"
 
 # initialize the database
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
 # CRUD operations
+
+
 def create_task(name):
     db = SessionLocal()
     task = Task(name=name)
@@ -33,11 +38,13 @@ def create_task(name):
     db.commit()
     db.close()
 
+
 def get_all_tasks():
     db = SessionLocal()
     tasks = db.query(Task).all()
     db.close()
     return tasks
+
 
 def update_task(task_id, name=None, completed=None):
     db = SessionLocal()
@@ -54,6 +61,7 @@ def update_task(task_id, name=None, completed=None):
     db.close()
     return task
 
+
 def delete_task(task_id):
     db = SessionLocal()
     task = db.query(Task).get(task_id)
@@ -64,4 +72,3 @@ def delete_task(task_id):
     db.commit()
     db.close()
     return True
-
