@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # create a SQLite database
@@ -17,7 +17,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     completed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f"<Task(id={self.id}, name='{self.name}', completed={self.completed})>"
@@ -48,7 +48,7 @@ def get_all_tasks():
 
 def update_task(task_id, name=None, completed=None):
     db = SessionLocal()
-    task = db.query(Task).get(task_id)
+    task = db.get(Task, task_id)
     if not task:
         db.close()
         return None  # or raise an error
@@ -64,7 +64,7 @@ def update_task(task_id, name=None, completed=None):
 
 def delete_task(task_id):
     db = SessionLocal()
-    task = db.query(Task).get(task_id)
+    task = db.get(Task, task_id)
     if not task:
         db.close()
         return False
