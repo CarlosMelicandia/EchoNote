@@ -7,7 +7,7 @@ class TaskParser:
         load_dotenv() #loads API key from .env -> i think anyone who wants to run this needs to have their own api ke
         api_key = os.getenv("GENAI_KEY")
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-pro")
+        self.model = genai.GenerativeModel("gemini-1.5-flash")
 
     def parse_transcript(self, transcript):
         with open("prompt_template.txt", "r") as file:
