@@ -1,29 +1,36 @@
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 class TaskParser:
     def __init__(self):
-        load_dotenv() #loads API key from .env -> i think anyone who wants to run this needs to have their own api ke
-        api_key = os.getenv("GENAI_KEY")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        load_dotenv()
+        genai.api_key = os.getenv("GENAI_KEY")
 
-    def parse_transcript(self, transcript):
+        self.client = genai.Client(api_key=genai.api_key)
+        self.model_name = "gemini-1.5-flash"
+        self.system_instruction = "You are an assistant that extracts tasks from transcripts."
+
+    def parse_transcript(self, transcript: str):
         with open("prompt_template.txt", "r") as file:
             base_prompt = file.read()
 
         full_prompt = f"{base_prompt}\n\n{transcript}"
 
         try:
-            response = self.model.generate_content(full_prompt)
-            tasks = eval(response.text.strip())  #converts Gemini’s response into Python data works if returns a Python-style list
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                config=types.GenerateContentConfig(
+                    system_instruction=self.system_instruction
+                ),
+                contents=full_prompt,
+            )
+            return response.text.strip()
         except Exception as e:
-            print("Gemini Error:", e)
-            tasks = []
-
-        return tasks
-
+            print("Error parsing transcript:", e)
+            return "[]"
+            
 '''class that reads a transcript and sends it to Gemini using a custom prompt.
 returns a list of tasks based on what the user said. This lets us take 
 unstructured voice input and turn it into structured to-do items for the project.
