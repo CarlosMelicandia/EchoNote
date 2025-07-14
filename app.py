@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from genai_parser import TaskParser
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
@@ -21,6 +22,19 @@ def index():
 
     notes = Note.query.all()
     return render_template('index.html', notes=notes)
+
+parser = TaskParser()
+
+@app.route('/api/parse-tasks', methods=['POST'])
+def parse_tasks():
+    data = request.get_json()
+    transcript = data.get("transcript", "")
+
+    if not transcript:
+        return jsonify({"tasks": []})
+
+    tasks = parser.parse_transcript(transcript)
+    return jsonify({"tasks": tasks})
 
 if __name__ == '__main__':
     with app.app_context():
