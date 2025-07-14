@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>EchoNote</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}My Notes{% endblock %}
+
+{% block content %}
 <h1>My Notes</h1>
 
 <form method="POST">
@@ -18,6 +15,4 @@
         <li>{{ note.content }}</li>
     {% endfor %}
 </ul>
-
-</body>
-</html>
+{% endblock %}

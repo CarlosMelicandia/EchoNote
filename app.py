@@ -22,6 +22,16 @@ def index():
     notes = Note.query.all()
     return render_template('index.html', notes=notes)
 
+# Use a context_processor to avoid repeating
+@app.context_processor
+def inject_nav_links():
+    return {
+        "nav_links": [
+            {"href": "/", "text": "Home"},
+            {"href": "/about", "text": "About"}
+        ]
+    }
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
