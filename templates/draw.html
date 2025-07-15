@@ -1,16 +1,136 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Simple Whiteboard</h2>
-<div style="margin-bottom: 10px;">
-  <button onclick="setTool('rectangle')">Rectangle</button>
-  <button onclick="setTool('circle')">Circle</button>
-  <button onclick="setTool('line')">Line</button>
-  <button onclick="setTool('freehand')">Freehand</button>
-  <button onclick="clearCanvas()">Clear</button>
-</div>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background-color: white;
+  }
+  
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+  }
+  
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    background-color: white;
+    border-radius: 50px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 15px auto;
+    max-width: 90%;
+    z-index: 10;
+  }
+  
+  .tool-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    margin: 0 5px;
+    border: none;
+    background-color: transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+  }
+  
+  .tool-button:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .tool-button.active {
+    background-color: #e6e9ff;
+  }
+  
+  .tool-button i {
+    font-size: 20px;
+    color: #333;
+  }
+  
+  .tool-number {
+    position: absolute;
+    bottom: 2px;
+    right: 5px;
+    font-size: 10px;
+    color: #999;
+  }
+  
+  #whiteboard {
+    flex-grow: 1;
+    width: 100%;
+    background-color: white;
+  }
+  
+  .text-input {
+    position: absolute;
+    background: transparent;
+    border: 1px dashed #999;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    min-width: 50px;
+    min-height: 24px;
+    padding: 4px;
+    outline: none;
+    display: none;
+  }
+</style>
 
-<canvas id="whiteboard" width="800" height="600" style="border:1px solid #ccc;"></canvas>
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div class="container">
+  <div class="toolbar">
+    <button class="tool-button active" onclick="setTool('rectangle')" title="Rectangle">
+      <i class="far fa-square"></i>
+      <span class="tool-number">1</span>
+    </button>
+    <button class="tool-button" onclick="setTool('diamond')" title="Diamond">
+      <i class="fas fa-diamond"></i>
+      <span class="tool-number">2</span>
+    </button>
+    <button class="tool-button" onclick="setTool('circle')" title="Circle">
+      <i class="far fa-circle"></i>
+      <span class="tool-number">3</span>
+    </button>
+    <button class="tool-button" onclick="setTool('arrow')" title="Arrow">
+      <i class="fas fa-arrow-right"></i>
+      <span class="tool-number">4</span>
+    </button>
+    <button class="tool-button" onclick="setTool('line')" title="Line">
+      <i class="fas fa-minus"></i>
+      <span class="tool-number">5</span>
+    </button>
+    <button class="tool-button" onclick="setTool('pen')" title="Pen">
+      <i class="fas fa-pen"></i>
+      <span class="tool-number">6</span>
+    </button>
+    <button class="tool-button" onclick="setTool('text')" title="Text">
+      <i class="fas fa-font"></i>
+      <span class="tool-number">7</span>
+    </button>
+    <button class="tool-button" onclick="setTool('eraser')" title="Eraser">
+      <i class="fas fa-eraser"></i>
+      <span class="tool-number">8</span>
+    </button>
+    <button class="tool-button" onclick="clearCanvas()" title="Clear All">
+      <i class="fas fa-trash-alt"></i>
+    </button>
+  </div>
+
+  <canvas id="whiteboard"></canvas>
+  <textarea class="text-input" id="textInput"></textarea>
+</div>
 
 <script>
   let tool = 'rectangle';
@@ -18,24 +138,53 @@
   let startX = 0, startY = 0;
   const shapes = [];
   let canvas, ctx;
+  let textInput;
+  let currentTextPosition = { x: 0, y: 0 };
+  let selectedShapeIndex = -1;
 
   function setTool(t) {
     tool = t;
+    // Update active button
+    document.querySelectorAll('.tool-button').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`.tool-button[onclick="setTool('${t}')"]`).classList.add('active');
+    
+    // Hide text input when switching tools
+    if (t !== 'text') {
+      textInput.style.display = 'none';
+    }
+    
+    // Set cursor based on tool
+    if (t === 'eraser') {
+      canvas.style.cursor = 'url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="white" stroke="black" stroke-width="1"/></svg>) 10 10, auto';
+    } else {
+      canvas.style.cursor = 'crosshair';
+    }
   }
 
   function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    shapes.length = 0;
+    if (confirm('Are you sure you want to clear the canvas?')) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      shapes.length = 0;
+    }
+  }
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight - document.querySelector('.toolbar').offsetHeight - 30;
+    redraw();
   }
 
   function redraw(includePreview = false, currentX = 0, currentY = 0) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw all saved shapes
-    shapes.forEach(shape => {
+    shapes.forEach((shape, index) => {
       ctx.beginPath();
-      ctx.strokeStyle = 'white';
+      ctx.strokeStyle = 'black';
       ctx.fillStyle = 'rgba(51, 132, 81, 0.1)';
+      ctx.lineWidth = 2;
       ctx.setLineDash([]); // Solid line for final shapes
       
       if (shape.type === 'rectangle') {
@@ -54,26 +203,43 @@
         ctx.fill();
         ctx.stroke();
       } 
+      else if (shape.type === 'diamond') {
+        ctx.moveTo(shape.x, shape.y - shape.height/2);
+        ctx.lineTo(shape.x + shape.width/2, shape.y);
+        ctx.lineTo(shape.x, shape.y + shape.height/2);
+        ctx.lineTo(shape.x - shape.width/2, shape.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
       else if (shape.type === 'line') {
         ctx.moveTo(shape.startX, shape.startY);
         ctx.lineTo(shape.endX, shape.endY);
         ctx.stroke();
-      } 
-      else if (shape.type === 'freehand') {
+      }
+      else if (shape.type === 'arrow') {
+        drawArrow(ctx, shape.startX, shape.startY, shape.endX, shape.endY);
+      }
+      else if (shape.type === 'pen') {
         ctx.moveTo(shape.points[0].x, shape.points[0].y);
         for (let i = 1; i < shape.points.length; i++) {
           ctx.lineTo(shape.points[i].x, shape.points[i].y);
         }
         ctx.stroke();
       }
+      else if (shape.type === 'text') {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'black';
+        ctx.fillText(shape.text, shape.x, shape.y);
+      }
     });
     
     // Draw preview shape with dotted outline
     if (includePreview && drawing) {
       ctx.beginPath();
-      ctx.strokeStyle = 'white';
+      ctx.strokeStyle = 'black';
       ctx.setLineDash([5, 5]); // Create dotted line
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
       
       if (tool === 'rectangle') {
         const width = currentX - startX;
@@ -92,10 +258,33 @@
         const radiusY = Math.abs(currentY - startY) / 2;
         
         ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-      } 
+      }
+      else if (tool === 'diamond') {
+        const centerX = (startX + currentX) / 2;
+        const centerY = (startY + currentY) / 2;
+        const width = Math.abs(currentX - startX);
+        const height = Math.abs(currentY - startY);
+        
+        ctx.moveTo(centerX, centerY - height/2);
+        ctx.lineTo(centerX + width/2, centerY);
+        ctx.lineTo(centerX, centerY + height/2);
+        ctx.lineTo(centerX - width/2, centerY);
+        ctx.closePath();
+      }
       else if (tool === 'line') {
         ctx.moveTo(startX, startY);
         ctx.lineTo(currentX, currentY);
+      }
+      else if (tool === 'arrow') {
+        drawArrow(ctx, startX, startY, currentX, currentY, true);
+      }
+      else if (tool === 'eraser') {
+        // Show eraser preview
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc(currentX, currentY, 15, 0, Math.PI * 2);
+        ctx.stroke();
       }
       
       ctx.stroke();
@@ -103,30 +292,207 @@
     }
   }
 
+  function drawArrow(ctx, fromX, fromY, toX, toY, isDashed = false) {
+    const headLength = 15;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Draw the line
+    ctx.beginPath();
+    if (isDashed) ctx.setLineDash([5, 5]);
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    if (isDashed) ctx.setLineDash([]);
+    
+    // Draw the arrow head
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI/6), toY - headLength * Math.sin(angle - Math.PI/6));
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI/6), toY - headLength * Math.sin(angle + Math.PI/6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function isPointInShape(x, y, shape) {
+    if (shape.type === 'rectangle') {
+      return x >= shape.x && x <= shape.x + shape.width && 
+             y >= shape.y && y <= shape.y + shape.height;
+    } 
+    else if (shape.type === 'circle') {
+      const dx = x - shape.x;
+      const dy = y - shape.y;
+      return (dx * dx) / (shape.radiusX * shape.radiusX) + 
+             (dy * dy) / (shape.radiusY * shape.radiusY) <= 1;
+    }
+    else if (shape.type === 'diamond') {
+      // Simplified check for diamond
+      const dx = Math.abs(x - shape.x);
+      const dy = Math.abs(y - shape.y);
+      return dx / shape.width * 2 + dy / shape.height * 2 <= 1;
+    }
+    else if (shape.type === 'line' || shape.type === 'arrow') {
+      // Check if point is close to the line
+      const dx = shape.endX - shape.startX;
+      const dy = shape.endY - shape.startY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const distance = Math.abs((dy * x - dx * y + shape.endX * shape.startY - shape.endY * shape.startX) / length);
+      return distance < 10 && 
+             x >= Math.min(shape.startX, shape.endX) - 10 && 
+             x <= Math.max(shape.startX, shape.endX) + 10 &&
+             y >= Math.min(shape.startY, shape.endY) - 10 && 
+             y <= Math.max(shape.startY, shape.endY) + 10;
+    }
+    else if (shape.type === 'text') {
+      // Approximate text bounds
+      const textWidth = ctx.measureText(shape.text).width;
+      return x >= shape.x && x <= shape.x + textWidth &&
+             y >= shape.y - 16 && y <= shape.y;
+    }
+    return false;
+  }
+
+  function findShapeAt(x, y) {
+    // Search in reverse order (top to bottom in z-index)
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (isPointInShape(x, y, shapes[i])) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function eraseAt(x, y) {
+    const eraseRadius = 15;
+    let erasedAny = false;
+    
+    // Check each shape
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const shape = shapes[i];
+      
+      // For pen strokes, check each point
+      if (shape.type === 'pen') {
+        let pointsToRemove = [];
+        for (let j = 0; j < shape.points.length; j++) {
+          const point = shape.points[j];
+          const dx = point.x - x;
+          const dy = point.y - y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance <= eraseRadius) {
+            pointsToRemove.push(j);
+            erasedAny = true;
+          }
+        }
+        
+        // Remove points in reverse order to not mess up indices
+        for (let j = pointsToRemove.length - 1; j >= 0; j--) {
+          shape.points.splice(pointsToRemove[j], 1);
+        }
+        
+        // Remove the shape if all points are erased
+        if (shape.points.length < 2) {
+          shapes.splice(i, 1);
+        }
+      }
+      // For other shapes, check if center is within eraser
+      else {
+        let shapeX, shapeY;
+        
+        if (shape.type === 'rectangle') {
+          shapeX = shape.x + shape.width / 2;
+          shapeY = shape.y + shape.height / 2;
+        } 
+        else if (shape.type === 'circle' || shape.type === 'diamond') {
+          shapeX = shape.x;
+          shapeY = shape.y;
+        }
+        else if (shape.type === 'line' || shape.type === 'arrow') {
+          shapeX = (shape.startX + shape.endX) / 2;
+          shapeY = (shape.startY + shape.endY) / 2;
+        }
+        else if (shape.type === 'text') {
+          shapeX = shape.x;
+          shapeY = shape.y;
+        }
+        
+        const dx = shapeX - x;
+        const dy = shapeY - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance <= eraseRadius) {
+          shapes.splice(i, 1);
+          erasedAny = true;
+        }
+      }
+    }
+    
+    return erasedAny;
+  }
+
   window.onload = function() {
     canvas = document.getElementById('whiteboard');
     ctx = canvas.getContext('2d');
+    textInput = document.getElementById('textInput');
+    
+    // Set initial canvas size
+    resizeCanvas();
+    
+    // Resize canvas when window size changes
+    window.addEventListener('resize', resizeCanvas);
 
     canvas.addEventListener('mousedown', (e) => {
+      const x = e.offsetX;
+      const y = e.offsetY;
+      
+      if (tool === 'text') {
+        // Position and show text input
+        currentTextPosition = { x, y };
+        textInput.style.left = x + 'px';
+        textInput.style.top = (y - 20) + 'px';
+        textInput.style.display = 'block';
+        textInput.focus();
+        return;
+      }
+      
+      if (tool === 'eraser') {
+        if (eraseAt(x, y)) {
+          redraw();
+        }
+        drawing = true;
+        return;
+      }
+      
       drawing = true;
-      startX = e.offsetX;
-      startY = e.offsetY;
+      startX = x;
+      startY = y;
 
-      if (tool === 'freehand') {
+      if (tool === 'pen') {
         shapes.push({
-          type: 'freehand',
+          type: 'pen',
           points: [{ x: startX, y: startY }]
         });
       }
     });
 
     canvas.addEventListener('mousemove', (e) => {
-      if (!drawing) return;
-      
       const currentX = e.offsetX;
       const currentY = e.offsetY;
-
-      if (tool === 'freehand') {
+      
+      if (tool === 'eraser') {
+        // Show eraser preview even when not drawing
+        redraw(true, currentX, currentY);
+        
+        if (drawing && eraseAt(currentX, currentY)) {
+          redraw(true, currentX, currentY);
+        }
+        return;
+      }
+      
+      if (!drawing) return;
+      
+      if (tool === 'pen') {
         const current = shapes[shapes.length - 1];
         current.points.push({ x: currentX, y: currentY });
         redraw();
@@ -142,6 +508,10 @@
 
       const endX = e.offsetX;
       const endY = e.offsetY;
+      
+      if (tool === 'eraser') {
+        return;
+      }
 
       if (tool === 'rectangle') {
         shapes.push({
@@ -166,9 +536,32 @@
           radiusY: radiusY
         });
       }
+      else if (tool === 'diamond') {
+        const centerX = (startX + endX) / 2;
+        const centerY = (startY + endY) / 2;
+        const width = Math.abs(endX - startX);
+        const height = Math.abs(endY - startY);
+        
+        shapes.push({
+          type: 'diamond',
+          x: centerX,
+          y: centerY,
+          width: width,
+          height: height
+        });
+      }
       else if (tool === 'line') {
         shapes.push({
           type: 'line',
+          startX: startX,
+          startY: startY,
+          endX: endX,
+          endY: endY
+        });
+      }
+      else if (tool === 'arrow') {
+        shapes.push({
+          type: 'arrow',
           startX: startX,
           startY: startY,
           endX: endX,
@@ -179,19 +572,65 @@
       redraw();
     });
     
+    // Handle text input
+    textInput.addEventListener('blur', () => {
+      const text = textInput.value.trim();
+      if (text) {
+        shapes.push({
+          type: 'text',
+          x: currentTextPosition.x,
+          y: currentTextPosition.y,
+          text: text
+        });
+        redraw();
+      }
+      textInput.value = '';
+      textInput.style.display = 'none';
+    });
+    
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        textInput.blur();
+      }
+    });
+    
     // Add this to handle case when user moves cursor out of canvas
     canvas.addEventListener('mouseleave', () => {
-      if (drawing && tool !== 'freehand') {
+      if (drawing && tool !== 'pen' && tool !== 'eraser') {
         redraw(); // Remove preview
       }
     });
     
     // Add this to handle case when user returns to canvas
     canvas.addEventListener('mouseenter', (e) => {
-      if (drawing && tool !== 'freehand') {
+      if (drawing && tool !== 'pen' && tool !== 'eraser') {
         redraw(true, e.offsetX, e.offsetY); // Show preview again
       }
     });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      const key = e.key;
+      if (key >= '1' && key <= '8') {
+        const toolMap = {
+          '1': 'rectangle',
+          '2': 'diamond',
+          '3': 'circle',
+          '4': 'arrow',
+          '5': 'line',
+          '6': 'pen',
+          '7': 'text',
+          '8': 'eraser'
+        };
+        if (toolMap[key]) {
+          setTool(toolMap[key]);
+        }
+      }
+    });
+    
+    // Set initial tool
+    setTool('rectangle');
   };
 </script>
 
