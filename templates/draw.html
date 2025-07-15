@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Simple Whiteboard</h2>
+<div style="margin-bottom: 10px;">
+  <button onclick="setTool('rectangle')">Rectangle</button>
+  <button onclick="setTool('circle')">Circle</button>
+  <button onclick="setTool('line')">Line</button>
+  <button onclick="setTool('freehand')">Freehand</button>
+  <button onclick="clearCanvas()">Clear</button>
+</div>
+
+<canvas id="whiteboard" width="800" height="600" style="border:1px solid #ccc;"></canvas>
+
+<script>
+  let tool = 'rectangle';
+  let drawing = false;
+  let startX = 0, startY = 0;
+  const shapes = [];
+  let canvas, ctx;
+
+  function setTool(t) {
+    tool = t;
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    shapes.length = 0;
+  }
+
+  function redraw(includePreview = false, currentX = 0, currentY = 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw all saved shapes
+    shapes.forEach(shape => {
+      ctx.beginPath();
+      ctx.strokeStyle = 'white';
+      ctx.fillStyle = 'rgba(51, 132, 81, 0.1)';
+      ctx.setLineDash([]); // Solid line for final shapes
+      
+      if (shape.type === 'rectangle') {
+        ctx.rect(shape.x, shape.y, shape.width, shape.height);
+        ctx.fill();
+        ctx.stroke();
+      } 
+      else if (shape.type === 'circle') {
+        ctx.ellipse(
+          shape.x, 
+          shape.y, 
+          shape.radiusX, 
+          shape.radiusY, 
+          0, 0, Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+      } 
+      else if (shape.type === 'line') {
+        ctx.moveTo(shape.startX, shape.startY);
+        ctx.lineTo(shape.endX, shape.endY);
+        ctx.stroke();
+      } 
+      else if (shape.type === 'freehand') {
+        ctx.moveTo(shape.points[0].x, shape.points[0].y);
+        for (let i = 1; i < shape.points.length; i++) {
+          ctx.lineTo(shape.points[i].x, shape.points[i].y);
+        }
+        ctx.stroke();
+      }
+    });
+    
+    // Draw preview shape with dotted outline
+    if (includePreview && drawing) {
+      ctx.beginPath();
+      ctx.strokeStyle = 'white';
+      ctx.setLineDash([5, 5]); // Create dotted line
+      ctx.lineWidth = 1;
+      
+      if (tool === 'rectangle') {
+        const width = currentX - startX;
+        const height = currentY - startY;
+        ctx.rect(
+          width >= 0 ? startX : currentX,
+          height >= 0 ? startY : currentY,
+          Math.abs(width),
+          Math.abs(height)
+        );
+      } 
+      else if (tool === 'circle') {
+        const centerX = (startX + currentX) / 2;
+        const centerY = (startY + currentY) / 2;
+        const radiusX = Math.abs(currentX - startX) / 2;
+        const radiusY = Math.abs(currentY - startY) / 2;
+        
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+      } 
+      else if (tool === 'line') {
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(currentX, currentY);
+      }
+      
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset to solid line
+    }
+  }
+
+  window.onload = function() {
+    canvas = document.getElementById('whiteboard');
+    ctx = canvas.getContext('2d');
+
+    canvas.addEventListener('mousedown', (e) => {
+      drawing = true;
+      startX = e.offsetX;
+      startY = e.offsetY;
+
+      if (tool === 'freehand') {
+        shapes.push({
+          type: 'freehand',
+          points: [{ x: startX, y: startY }]
+        });
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!drawing) return;
+      
+      const currentX = e.offsetX;
+      const currentY = e.offsetY;
+
+      if (tool === 'freehand') {
+        const current = shapes[shapes.length - 1];
+        current.points.push({ x: currentX, y: currentY });
+        redraw();
+      } else {
+        // Show preview with dotted outline for other tools
+        redraw(true, currentX, currentY);
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (!drawing) return;
+      drawing = false;
+
+      const endX = e.offsetX;
+      const endY = e.offsetY;
+
+      if (tool === 'rectangle') {
+        shapes.push({
+          type: 'rectangle',
+          x: Math.min(startX, endX),
+          y: Math.min(startY, endY),
+          width: Math.abs(endX - startX),
+          height: Math.abs(endY - startY)
+        });
+      }
+      else if (tool === 'circle') {
+        const centerX = (startX + endX) / 2;
+        const centerY = (startY + endY) / 2;
+        const radiusX = Math.abs(endX - startX) / 2;
+        const radiusY = Math.abs(endY - startY) / 2;
+        
+        shapes.push({
+          type: 'circle',
+          x: centerX,
+          y: centerY,
+          radiusX: radiusX,
+          radiusY: radiusY
+        });
+      }
+      else if (tool === 'line') {
+        shapes.push({
+          type: 'line',
+          startX: startX,
+          startY: startY,
+          endX: endX,
+          endY: endY
+        });
+      }
+
+      redraw();
+    });
+    
+    // Add this to handle case when user moves cursor out of canvas
+    canvas.addEventListener('mouseleave', () => {
+      if (drawing && tool !== 'freehand') {
+        redraw(); // Remove preview
+      }
+    });
+    
+    // Add this to handle case when user returns to canvas
+    canvas.addEventListener('mouseenter', (e) => {
+      if (drawing && tool !== 'freehand') {
+        redraw(true, e.offsetX, e.offsetY); // Show preview again
+      }
+    });
+  };
+</script>
+
+{% endblock %}
