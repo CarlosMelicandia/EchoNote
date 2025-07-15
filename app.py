@@ -4,6 +4,8 @@ from google.auth.exceptions import DefaultCredentialsError
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from genai_parser import TaskParser
+task_parser = TaskParser()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
@@ -80,10 +82,15 @@ def transcribe_audio():
     resp = speech_client.recognize(config=config, audio=audio)
     # Join all of the results into one string
     transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
-    return jsonify(transcript=transcript), 200
+    parsed_tasks = task_parser.parse_transcript(transcript)
 
+    return jsonify(
+        transcript=transcript,
+        tasks=parsed_tasks
+    ), 200
 
 if __name__ == '__main__':
     with app.app_context():
+
         db.create_all()
     app.run(debug=True)

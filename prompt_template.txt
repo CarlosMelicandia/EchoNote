@@ -1,0 +1,14 @@
+Given a transcript of someone speaking aloud, extract a list of clear, individual tasks. 
+Include any due dates or time frames if mentioned.
+
+Return your response as a JSON array of objects. Each object should include:
+- "text": a short description of the task
+- "due": a deadline or null
+
+Format:
+[
+  { "text": "...", "due": "..." },
+  { "text": "...", "due": "..." }
+]
+
+Transcript:
