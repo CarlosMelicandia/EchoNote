@@ -13,10 +13,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 
 
-
 # Dummy speech client class for testing
-
-
 class DummySpeechClient:
     """adding so tests can import app.py without crashing"""
 
@@ -32,18 +29,24 @@ except DefaultCredentialsError:
     # fallback to a stub so that tests can monkey patch
     speech_client = DummySpeechClient()
 
+# Define nav links to be used across routes
+def get_nav_links():
+    return [
+        {'href': '/', 'text': 'Home', 'endpoint': 'index'},
+        {'href': '/draw', 'text': 'Draw', 'endpoint': 'draw'}
+    ]
+
 #updated to use Task model not Note model
 @app.route('/', methods=['GET'])
 def index():
     tasks = get_all_tasks()
-    return render_template('index.html', tasks=tasks)
+    return render_template('index.html', tasks=tasks, nav_links=get_nav_links())
 
-
-
+@app.route('/draw', methods=['GET'])
+def draw():
+    return render_template('draw.html', nav_links=get_nav_links())
 
 # Audio upload route
-
-
 @app.route('/api/upload', methods=['POST'])
 def upload_audio():
     f = request.files.get('audio')
@@ -60,8 +63,6 @@ def upload_audio():
     return {"filename": filename}, 200
 
 # Audio transcribe route
-
-
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_audio():
     if 'audio' not in request.files:
@@ -81,7 +82,6 @@ def transcribe_audio():
         tasks=parsed_tasks
     ), 200
 # List tasks route
-
 @app.route('/api/tasks', methods=['GET'])
 def list_tasks():
     tasks = get_all_tasks()

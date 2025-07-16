@@ -1,7 +1,7 @@
-<nav>
+<nav class="navbar">
     <ul>
         {% for link in nav_links %}
-            <li><a href="{{ link.href }}">{{ link.text }}</a></li>
+            <li><a href="{{ link.href }}" class="{{ 'active' if request.endpoint == link.endpoint else '' }}">{{ link.text }}</a></li>
         {% endfor %}
     </ul>
 </nav>

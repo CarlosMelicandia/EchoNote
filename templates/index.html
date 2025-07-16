@@ -1,55 +1,173 @@
 {% extends "base.html" %}
 
-{% block title %}My Notes{% endblock %}
+{% block title %}EchoNote{% endblock %}
 
 {% block content %}
-<h1>My Notes</h1>
-<button id="btn-record">Start Recording</button>
-<button id="btn-stop" disabled>Stop Recording</button>
-<textarea id="transcript" placeholders="Transcript appears here..."></textarea>
+<div class="two-column-layout">
+    <div class="recording-panel">
+        <h2>Start Recording</h2>
+        <div class="mic-button" id="btn-record">
+            <div class="mic-icon"></div>
+        </div>
+        <button id="btn-stop" disabled>Stop Recording</button>
+        <div class="recording-lines">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+        <textarea id="transcript" placeholder="Transcript appears here..."></textarea>
+        <button id="btn-save">Save as Task</button>
+    </div>
+    
+    <div class="tasks-panel">
+        <h2>Tasks</h2>
+        <div class="task-list">
+            {% if tasks %}
+                {% for task in tasks %}
+                <div class="task-item">
+                    <div class="task-content">{{ task.name }} {% if task.completed %}(Done){% endif %}</div>
+                    <div class="task-waveform"></div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No tasks yet. Start recording to create tasks.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(
-        stream => {
-            const recorder = new MediaRecorder(stream);
-            let chunks = [];
+    document.addEventListener('DOMContentLoaded', function() {
+        const recordButton = document.getElementById('btn-record');
+        const stopButton = document.getElementById('btn-stop');
+        const saveButton = document.getElementById('btn-save');
+        const transcriptArea = document.getElementById('transcript');
+        
+        let recorder;
+        let stream;
+        
+        // Initialize media recording
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(
+            mediaStream => {
+                stream = mediaStream;
+                recorder = new MediaRecorder(stream);
+                let chunks = [];
 
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'audio/webm'});
-                chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm'});
+                    chunks = [];
 
-                const form = new FormData();
-                form.append('audio', blob, 'recording.webm')
+                    const form = new FormData();
+                    form.append('audio', blob, 'recording.webm')
 
-                const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                const { transcript } = await res.json();
-                document.getElementById('transcript').value = transcript;
-            };
+                    try {
+                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                        const { transcript } = await res.json();
+                        transcriptArea.value = transcript;
+                    } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptArea.value = 'Error transcribing audio. Please try again.';
+                    }
+                };
+            }
+        ).catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        });
 
-            document.getElementById('btn-record').onclick = () => {
+        // Record button
+        recordButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'inactive') {
                 recorder.start();
-                document.getElementById('btn-record').disabled = true;
-                document.getElementById('btn-stop').disabled = false;
-            };
-            document.getElementById('btn-stop').onclick = () => {
-                recorder.stop()
-                document.getElementById('btn-record').disabled = false;
-                document.getElementById('btn-stop').disabled = true;
-            };
-        }
-    )
-    .catch(console.error);
+                recordButton.classList.add('recording');
+                stopButton.disabled = false;
+            }
+        });
+
+        // Stop button
+        stopButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'recording') {
+                recorder.stop();
+                recordButton.classList.remove('recording');
+                stopButton.disabled = true;
+                
+                // Stop all tracks
+                if (stream) {
+                    stream.getTracks().forEach(track => {
+                        if (track.readyState === 'live') {
+                            track.stop();
+                        }
+                    });
+                }
+                
+                // Reinitialize for next recording
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(
+                    mediaStream => {
+                        stream = mediaStream;
+                        recorder = new MediaRecorder(stream);
+                        let chunks = [];
+
+                        recorder.ondataavailable = e => chunks.push(e.data);
+                        recorder.onstop = async () => {
+                            const blob = new Blob(chunks, { type: 'audio/webm'});
+                            chunks = [];
+
+                            const form = new FormData();
+                            form.append('audio', blob, 'recording.webm')
+
+                            try {
+                                const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                                const { transcript } = await res.json();
+                                transcriptArea.value = transcript;
+                            } catch (error) {
+                                console.error('Error transcribing audio:', error);
+                                transcriptArea.value = 'Error transcribing audio. Please try again.';
+                            }
+                        };
+                    }
+                ).catch(console.error);
+            }
+        });
+
+        // Save button
+        saveButton.addEventListener('click', async function() {
+            const transcript = transcriptArea.value.trim();
+            
+            if (!transcript) {
+                alert('Please record something first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/save_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tasks: [{ text: transcript }]
+                    })
+                });
+                
+                if (response.ok) {
+                    // Clear the transcript area
+                    transcriptArea.value = '';
+                    
+                    // Refresh the page to show the new task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save task');
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task: ' + error.message);
+            }
+        });
+    });
 </script>
-
-<form method="POST">
-    <textarea name="content" rows="4" cols="50" placeholder="Write a note..."></textarea><br>
-    <button type="submit">Save</button>
-</form>
-
-<ul>
-    {% for task in tasks %}
-        <li>{{ task.name }} {% if task.completed %}(Done){% endif %}</li>
-    {% endfor %}
-</ul>
 {% endblock %}
