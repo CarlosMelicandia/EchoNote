@@ -10,8 +10,7 @@ from database import create_task, init_db, get_all_tasks, update_task, delete_ta
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
-#Reminder for mofe to update all instances of note and change to task
-# then update routes to show saved tasks from the Task model
+
 
 
 # Dummy speech client class for testing
@@ -32,7 +31,7 @@ except DefaultCredentialsError:
     # fallback to a stub so that tests can monkey patch
     speech_client = DummySpeechClient()
 
-
+#updated to use Task model not Note model
 @app.route('/', methods=['GET'])
 def index():
     tasks = get_all_tasks()
@@ -40,20 +39,6 @@ def index():
 
 
 
-
-@app.route('/draw')
-def draw():
-    return render_template('draw.html')
-
-# Use a context_processor to avoid repeating
-@app.context_processor
-def inject_nav_links():
-    return {
-        "nav_links": [
-            {"href": "/", "text": "Home"},
-            {"href": "/draw", "text": "Draw"}
-        ]
-    }
 
 # Audio upload route
 
@@ -107,17 +92,17 @@ def save_task():
     data = request.get_json()
     print("Received JSON:", data)
     if not data or "tasks" not in data:
-        print("❌ No tasks provided")
+        print("No tasks provided")
         return jsonify(error='Task name is required'), 400
     tasks = data["tasks"]
     count = 0
     for task_name in tasks:
         task_text = task_name.get("text")
-        print("➡️ Trying to save task:", task_text)
+        print("Trying to save task:", task_text)
         if task_text:
             create_task(task_text)
             count += 1
-    print(f"✅ Saved {count} tasks to database")
+    print(f"Saved {count} tasks to database")
     return jsonify(message=f'{count} tasks saved'), 200
 
 
