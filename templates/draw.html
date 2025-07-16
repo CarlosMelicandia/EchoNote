@@ -1,82 +1,8 @@
 {% extends "base.html" %}
+{% block title %}Draw{% endblock %}
 {% block content %}
 
-<style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-    background-color: white;
-  }
-  
-  .container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-  }
-  
-  .toolbar {
-    display: flex;
-    justify-content: center;
-    padding: 10px;
-    background-color: white;
-    border-radius: 50px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    margin: 0px auto;
-    max-width: 90%;
-    z-index: 10;
-  }
-  
-  .tool-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    margin: 0 5px;
-    border: none;
-    background-color: transparent;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    position: relative;
-  }
-  
-  .tool-button:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .tool-button.active {
-    background-color: #e6e9ff;
-  }
-  
-  .tool-button i {
-    font-size: 20px;
-    color: #333;
-  }
-  
-  .tool-number {
-    position: absolute;
-    bottom: 2px;
-    right: 5px;
-    font-size: 10px;
-    color: #999;
-  }
-  
-  #whiteboard {
-    flex-grow: 1;
-    width: 100%;
-    background-color: white;
-  }
-</style>
-
-<!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<div class="container">
+<div class="drawing-container">
   <div class="toolbar">
     <button class="tool-button active" onclick="setTool('rectangle')" title="Rectangle">
       <i class="far fa-square"></i>
@@ -114,6 +40,12 @@
   <canvas id="whiteboard"></canvas>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <script>
   let tool = 'rectangle';
   let drawing = false;
@@ -145,8 +77,8 @@
   }
 
   function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - document.querySelector('.toolbar').offsetHeight - 30;
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight - document.querySelector('.toolbar').offsetHeight - 20;
     redraw();
   }
 
@@ -368,7 +300,7 @@
     return erasedAny;
   }
 
-  window.onload = function() {
+  document.addEventListener('DOMContentLoaded', function() {
     canvas = document.getElementById('whiteboard');
     ctx = canvas.getContext('2d');
     
@@ -533,7 +465,6 @@
     
     // Set initial tool
     setTool('rectangle');
-  };
+  });
 </script>
-
 {% endblock %}
