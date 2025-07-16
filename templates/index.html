@@ -48,8 +48,8 @@
 </form>
 
 <ul>
-    {% for note in notes %}
-        <li>{{ note.content }}</li>
+    {% for task in tasks %}
+        <li>{{ task.name }} {% if task.completed %}(Done){% endif %}</li>
     {% endfor %}
 </ul>
 {% endblock %}
