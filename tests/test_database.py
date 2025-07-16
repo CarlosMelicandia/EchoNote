@@ -1,7 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
 from database import Base, Task, create_task, get_all_tasks, update_task, delete_task
 
 TEST_DATABASE_URL = "sqlite:///:memory:"

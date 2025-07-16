@@ -8,15 +8,11 @@ from database import create_task, init_db, get_all_tasks, update_task, delete_ta
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///echo_note.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
-db = SQLAlchemy(app)
+#Reminder for mofe to update all instances of note and change to task
+# then update routes to show saved tasks from the Task model
 
-
-class Note(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
 
 # Dummy speech client class for testing
 
@@ -37,17 +33,13 @@ except DefaultCredentialsError:
     speech_client = DummySpeechClient()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    if request.method == 'POST':
-        note_content = request.form['content']
-        new_note = Note(content=note_content)
-        db.session.add(new_note)
-        db.session.commit()
-        return redirect(url_for('index'))
+    tasks = get_all_tasks()
+    return render_template('index.html', tasks=tasks)
 
-    notes = Note.query.all()
-    return render_template('index.html', notes=notes)
+
+
 
 # Audio upload route
 
@@ -118,6 +110,5 @@ def save_task():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
         init_db()#initialize the tasks database
     app.run(debug=True)
