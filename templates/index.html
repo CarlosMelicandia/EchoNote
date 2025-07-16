@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>EchoNote</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}My Notes{% endblock %}
+
+{% block content %}
 <h1>My Notes</h1>
 <button id="btn-record">Start Recording</button>
 <button id="btn-stop" disabled>Stop Recording</button>
@@ -51,10 +48,8 @@
 </form>
 
 <ul>
-    {% for note in notes %}
-        <li>{{ note.content }}</li>
+    {% for task in tasks %}
+        <li>{{ task.name }} {% if task.completed %}(Done){% endif %}</li>
     {% endfor %}
 </ul>
-
-</body>
-</html>
+{% endblock %}
