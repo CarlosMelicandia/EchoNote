@@ -47,6 +47,20 @@ def index():
     notes = Note.query.all()
     return render_template('index.html', notes=notes)
 
+@app.route('/draw')
+def draw():
+    return render_template('draw.html')
+
+# Use a context_processor to avoid repeating
+@app.context_processor
+def inject_nav_links():
+    return {
+        "nav_links": [
+            {"href": "/", "text": "Home"},
+            {"href": "/draw", "text": "Draw"}
+        ]
+    }
+
 # Audio upload route
 
 
