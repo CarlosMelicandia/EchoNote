@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from database import create_task, init_db, get_all_tasks, update_task, delete_task
-
+from genai_parser import TaskParser
+task_parser = TaskParser()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -73,8 +74,12 @@ def transcribe_audio():
     resp = speech_client.recognize(config=config, audio=audio)
     # Join all of the results into one string
     transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
-    return jsonify(transcript=transcript), 200
+    parsed_tasks = task_parser.parse_transcript(transcript)
 
+    return jsonify(
+        transcript=transcript,
+        tasks=parsed_tasks
+    ), 200
 # List tasks route
 
 @app.route('/api/tasks', methods=['GET'])
@@ -104,8 +109,6 @@ def save_task():
             count += 1
     print(f"Saved {count} tasks to database")
     return jsonify(message=f'{count} tasks saved'), 200
-
-
 
 if __name__ == '__main__':
     with app.app_context():
