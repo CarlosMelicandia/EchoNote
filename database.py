@@ -18,9 +18,11 @@ class Task(Base):
     name = Column(String(255), nullable=False)
     completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    due_date = Column(String(100), nullable=True)
 
     def __repr__(self):
-        return f"<Task(id={self.id}, name='{self.name}', completed={self.completed})>"
+        return f"<Task(id={self.id}, name='{self.name}', completed={self.completed}, due_date='{self.due_date}')>"
+
 
 # initialize the database
 
@@ -31,12 +33,13 @@ def init_db():
 # CRUD operations
 
 
-def create_task(name):
+def create_task(name, due_date=None):
     db = SessionLocal()
-    task = Task(name=name)
+    task = Task(name=name, due_date=due_date)
     db.add(task)
     db.commit()
     db.close()
+
 
 
 def get_all_tasks():
