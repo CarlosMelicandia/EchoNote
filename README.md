@@ -36,15 +36,15 @@ This project uses:
    pip install -r requirements.txt
    
 4. Add your Google credentials JSON to:
-./sensitive-credentials/echonote-api-key.json
+   `./sensitive-credentials/echonote-api-key.json`
 
 5. Set environment variables in the terminal:
-export GOOGLE_APPLICATION_CREDENTIALS="./sensitive-credentials/echonote-api-key.json"  
-export FLASK_ENV=development
+   `export GOOGLE_APPLICATION_CREDENTIALS="./sensitive-credentials/echonote-api-key.json"`
+   `export FLASK_ENV=development`
 
 6. Run the app
-python3 app.py.
-Then go to http://localhost:5000 in your browser.
+  `python3 app.py.`
+  `Then go to http://localhost:5000 in your browser.`
 
 ## Contact
 - Carlos Melicandia – c.melicandia15@gmail.com
