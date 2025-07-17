@@ -33,7 +33,8 @@ except DefaultCredentialsError:
 def get_nav_links():
     return [
         {'href': '/', 'text': 'Home', 'endpoint': 'index'},
-        {'href': '/draw', 'text': 'Draw', 'endpoint': 'draw'}
+        {'href': '/draw', 'text': 'Draw', 'endpoint': 'draw'},
+        {'href': '/appearance', 'text': 'Appearance', 'endpoint': 'appearance'}
     ]
 
 #updated to use Task model not Note model
@@ -109,6 +110,10 @@ def save_task():
             count += 1
     print(f"Saved {count} tasks to database")
     return jsonify(message=f'{count} tasks saved'), 200
+
+@app.route('/appearance', methods=['GET'])
+def appearance():
+    return render_template('appearance.html', nav_links=get_nav_links())
 
 if __name__ == '__main__':
     with app.app_context():
