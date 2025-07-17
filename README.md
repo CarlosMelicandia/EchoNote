@@ -24,7 +24,7 @@ This project uses:
 ## Setup Instructions
 
 ## Contact
-Carlos Melicandia – 
-Demi – 
-Mofe – 
-Eshaal Syeda – eshaal.syeda@richmond.edu
+- Carlos Melicandia –
+- Demi –
+- Mofe –
+- Eshaal Syeda – eshaal.syeda@richmond.edu
