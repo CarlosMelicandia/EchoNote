@@ -115,6 +115,32 @@ def save_task():
     print(f"Saved {count} tasks to database")
     return jsonify(message=f'{count} tasks saved'), 200
 
+# Update task route
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task_route(task_id):
+    data = request.get_json()
+    if not data:
+        return jsonify(error='No data provided'), 400
+    
+    name = data.get('name')
+    completed = data.get('completed')
+    due_date = data.get('due_date')
+    
+    updated_task = update_task(task_id, name=name, completed=completed, due_date=due_date)
+    if updated_task is None:
+        return jsonify(error='Task not found'), 404
+    
+    return jsonify(message='Task updated successfully'), 200
+
+# Delete task route
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task_route(task_id):
+    success = delete_task(task_id)
+    if not success:
+        return jsonify(error='Task not found'), 404
+    
+    return jsonify(message='Task deleted successfully'), 200
+
 if __name__ == '__main__':
     with app.app_context():
         init_db()#initialize the tasks database
