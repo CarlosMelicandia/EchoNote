@@ -27,9 +27,18 @@
                 {% for task in tasks %}
                 <div class="task-item">
                     <div class="task-content">
-                        {{ task.name }}
-                        {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
-                        {% if task.completed %} (Done){% endif %}
+                        <span class="task-text">{{ task.name }}</span>
+                        {% if task.due_date %} — <strong>Due:</strong> <span class="due-date">{{ task.due_date }}</span>{% endif %}
+                        {% if task.completed %}<span class="completed-status"> (Done)</span>{% endif %}
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-edit" onclick="editTask({{ task.id }}, '{{ task.name }}', '{{ task.due_date or '' }}')">Edit</button>
+                        <button class="btn-delete" onclick="deleteTask({{ task.id }})">Delete</button>
+                        {% if not task.completed %}
+                        <button class="btn-complete" onclick="markComplete({{ task.id }})">Mark Done</button>
+                        {% else %}
+                        <button class="btn-incomplete" onclick="markIncomplete({{ task.id }})">Mark Undone</button>
+                        {% endif %}
                     </div>
                     <div class="task-waveform"></div>
                 </div>
@@ -44,6 +53,98 @@
 
 {% block scripts %}
 <script>
+    // Simple functions that anyone can understand
+    function editTask(taskId, currentName, currentDueDate) {
+        // Ask user for new name
+        var newName = prompt('Edit task name:', currentName);
+        if (newName === null) return; // User clicked Cancel
+        
+        // Ask user for new due date
+        var newDueDate = prompt('Edit due date (or leave empty):', currentDueDate);
+        if (newDueDate === null) return; // User clicked Cancel
+        
+        // Send the update to the server
+        fetch('/api/tasks/' + taskId, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                name: newName || currentName,
+                due_date: newDueDate || null
+            })
+        })
+        .then(function(response) {
+            if (response.ok) {
+                location.reload(); // Refresh the page
+            } else {
+                alert('Error updating task');
+            }
+        })
+        .catch(function() {
+            alert('Error updating task');
+        });
+    }
+
+    function deleteTask(taskId) {
+        // Ask user to confirm
+        if (!confirm('Are you sure you want to delete this task?')) {
+            return; // User clicked Cancel
+        }
+        
+        // Send delete request to server
+        fetch('/api/tasks/' + taskId, {
+            method: 'DELETE'
+        })
+        .then(function(response) {
+            if (response.ok) {
+                location.reload(); // Refresh the page
+            } else {
+                alert('Error deleting task');
+            }
+        })
+        .catch(function() {
+            alert('Error deleting task');
+        });
+    }
+
+    function markComplete(taskId) {
+        // Mark task as completed
+        fetch('/api/tasks/' + taskId, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({completed: true})
+        })
+        .then(function(response) {
+            if (response.ok) {
+                location.reload(); // Refresh the page
+            } else {
+                alert('Error updating task');
+            }
+        })
+        .catch(function() {
+            alert('Error updating task');
+        });
+    }
+
+    function markIncomplete(taskId) {
+        // Mark task as not completed
+        fetch('/api/tasks/' + taskId, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({completed: false})
+        })
+        .then(function(response) {
+            if (response.ok) {
+                location.reload(); // Refresh the page
+            } else {
+                alert('Error updating task');
+            }
+        })
+        .catch(function() {
+            alert('Error updating task');
+        });
+    }
+
+    // Original recording functionality
     document.addEventListener('DOMContentLoaded', function() {
         const recordButton = document.getElementById('btn-record');
         const stopButton = document.getElementById('btn-stop');
