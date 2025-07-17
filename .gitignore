@@ -28,3 +28,5 @@ env/
 #Google STT API json file
 /sensitive-credentials
 sensitive-credentials/echonote-api-key.json
+
+.env
