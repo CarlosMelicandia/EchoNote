@@ -24,7 +24,7 @@ This project uses:
 ## Setup Instructions
 
 ## Contact
-- Carlos Melicandia –
-- Demi –
-- Mofe –
+- Carlos Melicandia – c.melicandia15@gmail.com
+- Demi Fashemo – dfashemo@seas.upenn.edu
+- Mofetoluwa Samadelus – mofetoluwa.samadelus@morehouse.edu
 - Eshaal Syeda – eshaal.syeda@richmond.edu
