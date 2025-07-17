@@ -49,7 +49,7 @@ def get_all_tasks():
     return tasks
 
 
-def update_task(task_id, name=None, completed=None, due_date=None):
+def update_task(task_id, name=None, completed=None):
     db = SessionLocal()
     task = db.get(Task, task_id)
     if not task:
@@ -59,8 +59,6 @@ def update_task(task_id, name=None, completed=None, due_date=None):
         task.name = name
     if completed is not None:
         task.completed = completed
-    if due_date is not None:
-        task.due_date = due_date
     db.commit()
     db.refresh(task)
     db.close()

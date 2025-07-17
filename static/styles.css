@@ -302,82 +302,71 @@
   .task-content {
     margin-bottom: 10px;
     font-weight: 500;
+  }
+  
+  .task-waveform {
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20'%3E%3Cpath d='M0,10 Q5,5 10,10 T20,10 T30,10 T40,10 T50,10 T60,10 T70,10 T80,10 T90,10 T100,10' fill='none' stroke='%23ececf1' stroke-width='1'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-position: center;
+    opacity: 0.5;
+  }
+  
+  /* Drawing page styles */
+  .drawing-container {
+    width: 100%;
+    height: calc(100vh - 150px);
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+  }
+  
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    margin: 0 auto 20px;
+    max-width: 90%;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  
+  .tool-button {
+    display: flex;
     align-items: center;
-    flex-wrap: wrap;
-  }
-  
-  .task-text {
-    flex-grow: 1;
-  }
-  
-  .due-date {
-    color: #888;
-    font-size: 0.9em;
-  }
-  
-  .completed-status {
-    color: #4CAF50;
-    font-weight: bold;
-  }
-  
-  .task-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-  }
-  
-  .task-actions button {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 14px;
-    border-radius: 20px;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    margin: 0 5px;
     border: none;
+    background-color: transparent;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    transition: background-color 0.2s;
+    position: relative;
   }
   
-  .btn-edit {
-    background-color: #2196F3;
-    color: white;
+  .tool-button:hover {
+    background-color: #444;
   }
   
-  .btn-edit:hover {
-    background-color: #1976D2;
-    transform: translateY(-1px);
+  .tool-button.active {
+    background-color: #555;
   }
   
-  .btn-delete {
-    background-color: #f44336;
-    color: white;
+  .tool-button i {
+    font-size: 20px;
+    color: var(--text-primary);
   }
   
-  .btn-delete:hover {
-    background-color: #d32f2f;
-    transform: translateY(-1px);
-  }
-  
-  .btn-complete {
-    background-color: #4CAF50;
-    color: white;
-  }
-  
-  .btn-complete:hover {
-    background-color: #388E3C;
-    transform: translateY(-1px);
-  }
-  
-  .btn-incomplete {
-    background-color: #FF9800;
-    color: white;
-  }
-  
-  .btn-incomplete:hover {
-    background-color: #F57C00;
-    transform: translateY(-1px);
+  .tool-number {
+    position: absolute;
+    bottom: 2px;
+    right: 5px;
+    font-size: 10px;
+    color: #999;
   }
   
   #whiteboard {
