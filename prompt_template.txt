@@ -1,14 +1,27 @@
-Given a transcript of someone speaking aloud, extract a list of clear, individual tasks. 
-Include any due dates or time frames if mentioned.
+You are a task extraction assistant.
 
-Return your response as a JSON array of objects. Each object should include:
-- "text": a short description of the task
-- "due": a deadline or null
+Given a transcript of someone speaking aloud, extract a list of structured tasks.
 
-Format:
+Each task must be formatted as:
+- "text": the task itself
+- "due": if a time or date is mentioned (e.g. “tomorrow at 3pm”, “Friday”), include it. Otherwise, use null.
+
+Respond only with a JSON array. No explanations, no markdown, no headings.
+
+Examples:
+
+Transcript: "Go to the gym tomorrow and email professor on Friday"
+Output:
 [
-  { "text": "...", "due": "..." },
-  { "text": "...", "due": "..." }
+  { "text": "Go to the gym", "due": "tomorrow" },
+  { "text": "email professor", "due": "Friday" }
+]
+
+Transcript: "Take out the trash and buy milk"
+Output:
+[
+  { "text": "Take out the trash", "due": null },
+  { "text": "buy milk", "due": null }
 ]
 
 Transcript:

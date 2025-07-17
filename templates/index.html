@@ -26,7 +26,11 @@
             {% if tasks %}
                 {% for task in tasks %}
                 <div class="task-item">
-                    <div class="task-content">{{ task.name }} {% if task.completed %}(Done){% endif %}</div>
+                    <div class="task-content">
+                        {{ task.name }}
+                        {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
+                        {% if task.completed %} (Done){% endif %}
+                    </div>
                     <div class="task-waveform"></div>
                 </div>
                 {% endfor %}
@@ -149,7 +153,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        tasks: [{ text: transcript }]
+                        transcript: transcript
                     })
                 });
                 
