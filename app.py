@@ -120,6 +120,34 @@ def save_task():
 def appearance():
     return render_template('appearance.html', nav_links=get_nav_links())
 
+# Update task route
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task_route(task_id):
+    data = request.get_json()
+    
+    if not data:
+        return jsonify(error='No data provided'), 400
+    
+    name = data.get('name')
+    completed = data.get('completed')
+    
+    updated_task = update_task(task_id, name, completed)
+    
+    if updated_task:
+        return jsonify(message='Task updated successfully'), 200
+    else:
+        return jsonify(error='Task not found'), 404
+
+# Delete task route
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task_route(task_id):
+    success = delete_task(task_id)
+    
+    if success:
+        return jsonify(message='Task deleted successfully'), 200
+    else:
+        return jsonify(error='Task not found'), 404
+
 if __name__ == '__main__':
     with app.app_context():
         init_db()#initialize the tasks database

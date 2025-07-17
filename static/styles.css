@@ -505,3 +505,41 @@
       grid-template-columns: 1fr;
     }
   }
+
+  .task-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.btn-edit, .btn-delete {
+    height: 36px;
+    font-size: 14px;
+    padding: 0 12px;
+}
+
+.btn-delete {
+    background-color: #ff3b30;
+    color: white;
+}
+
+.task-edit-form {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.task-edit-form input {
+    width: 100%;
+    padding: 8px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+}

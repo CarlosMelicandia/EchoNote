@@ -25,11 +25,15 @@
         <div class="task-list">
             {% if tasks %}
                 {% for task in tasks %}
-                <div class="task-item">
+                <div class="task-item" data-task-id="{{ task.id }}">
                     <div class="task-content">
                         {{ task.name }}
                         {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
                         {% if task.completed %} (Done){% endif %}
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-edit" data-task-id="{{ task.id }}">Edit</button>
+                        <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
                     </div>
                     <div class="task-waveform"></div>
                 </div>
