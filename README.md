@@ -1,18 +1,30 @@
-# EchoNote
+# EchoNote – Voice-Powered Task Manager
 
-EchoNote is a voice-powered task manager that lets you speak your tasks instead of typing them. It uses Google’s Speech-to-Text to transcribe your voice and Google Gemini AI to break it into clear, structured tasks. The app is built with Flask and stores tasks in a local SQLite database.
+EchoNote is a Python-based web app that uses Google Speech-to-Text and Google Gemini AI to turn spoken input into organized tasks. Just speak your to-do list, and EchoNote will transcribe, extract, and save your tasks.
 
-## Features
+## General Info
 
-- Record voice to create tasks
-- AI extracts and structures tasks automatically
-- Tasks are stored and displayed in a clean web interface
+This project was developed as part of the SEO Tech Developers Summer 2025 program. It demonstrates how to:
 
-## Tech Stack
+- Use speech recognition to capture user input
+- Parse natural language into structured data using AI
+- Store and display tasks using a local database and Flask app
 
-- Python (Flask)
-- HTML, CSS
-- SQLite with SQLAlchemy
-- Google Cloud Speech-to-Text
+## Technologies
+
+This project uses:
+
+- Python 3.11+
+- Flask
+- SQLite + SQLAlchemy
+- Google Cloud Speech-to-Text API
 - Google Generative AI (Gemini)
+- HTML/CSS (Jinja templates)
 
+## Setup Instructions
+
+## Contact
+Carlos Melicandia – 
+Demi – 
+Mofe – 
+Eshaal Syeda – eshaal.syeda@richmond.edu
