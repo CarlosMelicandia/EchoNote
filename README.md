@@ -43,7 +43,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="./sensitive-credentials/echonote-api-key.
 export FLASK_ENV=development
 
 6. Run the app
-python3 app.py
+python3 app.py.
 Then go to http://localhost:5000 in your browser.
 
 ## Contact
