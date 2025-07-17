@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // For example: Ctrl+S to save, Esc to cancel, etc.
     });
 
-    // Task editing and deletion functionality
+    // Task editing, deletion, and completion functionality
     // Only run this code on pages with task items
     if (document.querySelector('.task-list')) {
         // Task editing
@@ -156,6 +156,88 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
+        // Task completion
+        document.querySelectorAll('.btn-done').forEach(button => {
+            button.addEventListener('click', async function() {
+                const taskId = this.getAttribute('data-task-id');
+                const taskItem = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+                
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            completed: true
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Mark as completed visually
+                        taskItem.classList.add('completed');
+                        
+                        // Update the button to show "Undo" instead of "Done"
+                        this.textContent = 'Undo';
+                        this.classList.remove('btn-done');
+                        this.classList.add('btn-undo');
+                        
+                        // Add "(Done)" text to the task content if it's not already there
+                        const taskContent = taskItem.querySelector('.task-content');
+                        if (!taskContent.textContent.includes('(Done)')) {
+                            taskContent.textContent = taskContent.textContent + ' (Done)';
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to mark task as completed');
+                    }
+                } catch (error) {
+                    console.error('Error marking task as completed:', error);
+                    alert('Error marking task as completed: ' + error.message);
+                }
+            });
+        });
+        
+        // Undo completion
+        document.querySelectorAll('.btn-undo').forEach(button => {
+            button.addEventListener('click', async function() {
+                const taskId = this.getAttribute('data-task-id');
+                const taskItem = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+                
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            completed: false
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Remove completed styling
+                        taskItem.classList.remove('completed');
+                        
+                        // Update the button back to "Done"
+                        this.textContent = 'Done';
+                        this.classList.remove('btn-undo');
+                        this.classList.add('btn-done');
+                        
+                        // Remove "(Done)" text from the task content
+                        const taskContent = taskItem.querySelector('.task-content');
+                        taskContent.textContent = taskContent.textContent.replace(' (Done)', '');
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to mark task as incomplete');
+                    }
+                } catch (error) {
+                    console.error('Error marking task as incomplete:', error);
+                    alert('Error marking task as incomplete: ' + error.message);
+                }
+            });
+        });
+        
         // Helper function to attach event listeners to task buttons
         function attachTaskButtonListeners() {
             // Re-attach edit button listeners
@@ -172,6 +254,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.addEventListener('click', function() {
                     // This would be a duplicate of the delete functionality above
                     // In a real implementation, you'd refactor the delete logic into a separate function
+                    // and call it here
+                });
+            });
+            
+            // Re-attach done button listeners
+            document.querySelectorAll('.btn-done').forEach(button => {
+                button.addEventListener('click', function() {
+                    // This would be a duplicate of the done functionality above
+                    // In a real implementation, you'd refactor the done logic into a separate function
+                    // and call it here
+                });
+            });
+            
+            // Re-attach undo button listeners
+            document.querySelectorAll('.btn-undo').forEach(button => {
+                button.addEventListener('click', function() {
+                    // This would be a duplicate of the undo functionality above
+                    // In a real implementation, you'd refactor the undo logic into a separate function
                     // and call it here
                 });
             });

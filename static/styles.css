@@ -512,7 +512,7 @@
     margin-bottom: 10px;
 }
 
-.btn-edit, .btn-delete {
+.btn-edit, .btn-delete, .btn-done, .btn-undo {
     height: 36px;
     font-size: 14px;
     padding: 0 12px;
@@ -521,6 +521,21 @@
 .btn-delete {
     background-color: #ff3b30;
     color: white;
+}
+
+.btn-done {
+    background-color: #34c759;
+    color: white;
+}
+
+.btn-undo {
+    background-color: #ff9500;
+    color: white;
+}
+
+.task-item.completed {
+    background-color: rgba(52, 199, 89, 0.2); /* Green with opacity */
+    border-left: 4px solid #34c759;
 }
 
 .task-edit-form {
