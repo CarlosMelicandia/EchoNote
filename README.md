@@ -23,6 +23,29 @@ This project uses:
 
 ## Setup Instructions
 
+1. Clone this repo  
+   `git clone git@github.com:CarlosMelicandia/EchoNote.git`
+
+2. Go into the folder  
+   `cd EchoNote`
+
+3. Set up your virtual environment  
+   ```bash
+   python3 -m venv .venv  
+   source .venv/bin/activate  
+   pip install -r requirements.txt
+   
+4. Add your Google credentials JSON to:
+./sensitive-credentials/echonote-api-key.json
+
+5. Set environment variables in the terminal:
+export GOOGLE_APPLICATION_CREDENTIALS="./sensitive-credentials/echonote-api-key.json"  
+export FLASK_ENV=development
+
+6. Run the app
+python3 app.py
+  Then go to http://localhost:5000 in your browser.
+
 ## Contact
 - Carlos Melicandia – c.melicandia15@gmail.com
 - Demi Fashemo – dfashemo@seas.upenn.edu
