@@ -26,11 +26,10 @@ if os.getenv("FLASK_ENV") == "testing":
     speech_client = DummySpeechClient()
 else:
     # Initializing google speech client
-    try:
-        speech_client = speech.SpeechClient()
-    except DefaultCredentialsError:
-        # fallback to a stub so that tests can monkey patch
-        speech_client = DummySpeechClient()
+    speech_client = speech.SpeechClient()
+
+#verify which client 
+print("speech_client is", type(speech_client).__name__)
 
 # Define nav links to be used across routes
 def get_nav_links():
