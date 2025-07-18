@@ -68,17 +68,21 @@ def upload_audio():
 # Audio transcribe route
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_audio():
-    if 'audio' not in request.files:
-        return jsonify(error='no file'), 400
-    audio_bytes = request.files['audio'].read()
-    audio = speech.RecognitionAudio(content=audio_bytes)
-    config = speech.RecognitionConfig(
-        language_code="en-US",
-    )
-    resp = speech_client.recognize(config=config, audio=audio)
-    transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
-
-    return jsonify(transcript=transcript), 200
+    try:
+        if 'audio' not in request.files:
+            return jsonify(error='no file'), 400
+        audio_bytes = request.files['audio'].read()
+        audio = speech.RecognitionAudio(content=audio_bytes)
+        config = speech.RecognitionConfig(
+            language_code="en-US",
+        )
+        resp = speech_client.recognize(config=config, audio=audio)
+        transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
+        return jsonify(transcript=transcript), 200
+    except NotImplementedError as e:
+        return jsonify(error=str(e)), 501
+    except Exception as e:
+        return jsonify(error="Transcription failed"), 500
 
 # List tasks route
 @app.route('/api/tasks', methods=['GET'])
@@ -93,30 +97,37 @@ def list_tasks():
 # process tasks route
 @app.route('/api/save_task', methods=['POST'])
 def save_task():
-    data = request.get_json()
-    print("Received JSON:", data)
+    try:
+        data = request.get_json()
+        print("Received JSON:", data)
 
-    if not data or "transcript" not in data:
-        print("No transcript provided")
-        return jsonify(error='Transcript is required'), 400
+        if not data or "transcript" not in data:
+            print("No transcript provided")
+            return jsonify(error='Transcript is required'), 400
 
-    transcript = data["transcript"]
-    parsed_tasks = task_parser.parse_transcript(transcript)
+        transcript = data["transcript"]
+        parsed_tasks = task_parser.parse_transcript(transcript)
 
-    if not isinstance(parsed_tasks, list):
-        return jsonify(error="Failed to parse tasks"), 500
+        if not isinstance(parsed_tasks, list):
+            return jsonify(error="Failed to parse tasks"), 500
+        
+        count = 0
+        for task_data in parsed_tasks:
+            task_text = task_data.get("text")
+            due_date = task_data.get("due")
+            print(f"Trying to save task: {task_text} (Due: {due_date})")
+            if task_text:
+                create_task(task_text, due_date)
+                count += 1   
+        print(f"Saved {count} tasks to database")
+        return jsonify(message=f'{count} tasks saved'), 200
     
-    count = 0
-    for task_data in parsed_tasks:
-        task_text = task_data.get("text")
-        due_date = task_data.get("due")
-        print(f"Trying to save task: {task_text} (Due: {due_date})")
-        if task_text:
-            create_task(task_text, due_date)
-            count += 1
-            
-    print(f"Saved {count} tasks to database")
-    return jsonify(message=f'{count} tasks saved'), 200
+    except NotImplementedError as e:
+        return jsonify(error=str(e)), 501
+    
+    except Exception as e:
+        return jsonify(error="Save task failed"), 500
+    
 
 @app.route('/appearance', methods=['GET'])
 def appearance():
