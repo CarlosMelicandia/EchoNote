@@ -1,5 +1,4 @@
 import os
-from urllib import response
 from dotenv import load_dotenv
 import google.generativeai as genai
 import json
@@ -18,7 +17,9 @@ class TaskParser:
         self.model = genai.GenerativeModel("gemini-1.5-pro") 
 
     def parse_transcript(self, transcript: str):
-        with open("prompt_template.txt", "r") as file:
+        base_directory = os.path.dirname(__file__)
+        template = os.path.join(base_directory, "prompt_template.txt")
+        with open(template, "r") as file:
             base_prompt = file.read()
 
         full_prompt = f"{base_prompt}\n\n{transcript}"
