@@ -2,15 +2,17 @@ import os
 from google.cloud import speech
 from google.auth.exceptions import DefaultCredentialsError
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from database import create_task, init_db, get_all_tasks, update_task, delete_task
+from flask import Flask, render_template, request, jsonify
+from database import db, create_task, get_all_tasks, update_task, delete_task
 from genai_parser import TaskParser
 task_parser = TaskParser()
 
 app = Flask(__name__)
+#"sqlite:///./echo_note.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///echo_note.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+db.init_app(app)
 
 
 # Dummy speech client class for testing
@@ -52,7 +54,7 @@ def draw():
 def upload_audio():
     f = request.files.get('audio')
     if not f:
-        return {"error": "no file"}, 40
+        return {"error": "no file"}, 400
     # sanitizing filename (used werkzeug helper)
     filename = secure_filename(f.filename)
     upload_folder = app.config['UPLOAD_FOLDER']
@@ -150,5 +152,5 @@ def delete_task_route(task_id):
 
 if __name__ == '__main__':
     with app.app_context():
-        init_db()#initialize the tasks database
+        db.create_all()#initialize the tasks database
     app.run(debug=True)
