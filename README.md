@@ -14,7 +14,7 @@ This project was developed as part of the SEO Tech Developers Summer 2025 progra
 
 This project uses:
 
-- Python 3.11+
+- Python 3.9+
 - Flask
 - SQLite + SQLAlchemy
 - Google Cloud Speech-to-Text API
