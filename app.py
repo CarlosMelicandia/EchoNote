@@ -14,22 +14,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 db.init_app(app)
 
-
 # Dummy speech client class for testing
 class DummySpeechClient:
     """adding so tests can import app.py without crashing"""
-
     def recognize(self, config, audio):
         # stub - tests will override this
         raise NotImplementedError("This should be monkey patched in tests")
-
-
-# Initializing google speech client
-try:
-    speech_client = speech.SpeechClient()
-except DefaultCredentialsError:
-    # fallback to a stub so that tests can monkey patch
+    
+#protect app from calling dummy stub when we aren't testing
+if os.getenv("FLASK_ENV") == "testing":
     speech_client = DummySpeechClient()
+else:
+    # Initializing google speech client
+    try:
+        speech_client = speech.SpeechClient()
+    except DefaultCredentialsError:
+        # fallback to a stub so that tests can monkey patch
+        speech_client = DummySpeechClient()
 
 # Define nav links to be used across routes
 def get_nav_links():
