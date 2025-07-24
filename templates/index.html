@@ -79,8 +79,9 @@
 
                     try {
                         const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                        const { transcript } = await res.json();
-                        transcriptArea.value = transcript;
+                        const payload = await res.json();
+                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                        transcriptArea.value = payload.transcript;
                     } catch (error) {
                         console.error('Error transcribing audio:', error);
                         transcriptArea.value = 'Error transcribing audio. Please try again.';
@@ -134,8 +135,9 @@
 
                             try {
                                 const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                                const { transcript } = await res.json();
-                                transcriptArea.value = transcript;
+                                const payload = await res.json();
+                                if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                                transcriptArea.value = payload.transcript;
                             } catch (error) {
                                 console.error('Error transcribing audio:', error);
                                 transcriptArea.value = 'Error transcribing audio. Please try again.';

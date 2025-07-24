@@ -2,32 +2,34 @@ import os
 from google.cloud import speech
 from google.auth.exceptions import DefaultCredentialsError
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from database import create_task, init_db, get_all_tasks, update_task, delete_task
+from flask import Flask, render_template, request, jsonify
+from database import db, create_task, get_all_tasks, update_task, delete_task
 from genai_parser import TaskParser
 task_parser = TaskParser()
 
 app = Flask(__name__)
+#"sqlite:///./echo_note.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///echo_note.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
-
+db.init_app(app)
 
 # Dummy speech client class for testing
 class DummySpeechClient:
     """adding so tests can import app.py without crashing"""
-
     def recognize(self, config, audio):
         # stub - tests will override this
         raise NotImplementedError("This should be monkey patched in tests")
-
-
-# Initializing google speech client
-try:
-    speech_client = speech.SpeechClient()
-except DefaultCredentialsError:
-    # fallback to a stub so that tests can monkey patch
+    
+#protect app from calling dummy stub when we aren't testing
+if os.getenv("FLASK_ENV") == "testing":
     speech_client = DummySpeechClient()
+else:
+    # Initializing google speech client
+    speech_client = speech.SpeechClient()
+
+#verify which client 
+print("speech_client is", type(speech_client).__name__)
 
 # Define nav links to be used across routes
 def get_nav_links():
@@ -52,7 +54,7 @@ def draw():
 def upload_audio():
     f = request.files.get('audio')
     if not f:
-        return {"error": "no file"}, 40
+        return {"error": "no file"}, 400
     # sanitizing filename (used werkzeug helper)
     filename = secure_filename(f.filename)
     upload_folder = app.config['UPLOAD_FOLDER']
@@ -66,17 +68,21 @@ def upload_audio():
 # Audio transcribe route
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_audio():
-    if 'audio' not in request.files:
-        return jsonify(error='no file'), 400
-    audio_bytes = request.files['audio'].read()
-    audio = speech.RecognitionAudio(content=audio_bytes)
-    config = speech.RecognitionConfig(
-        language_code="en-US",
-    )
-    resp = speech_client.recognize(config=config, audio=audio)
-    transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
-
-    return jsonify(transcript=transcript), 200
+    try:
+        if 'audio' not in request.files:
+            return jsonify(error='no file'), 400
+        audio_bytes = request.files['audio'].read()
+        audio = speech.RecognitionAudio(content=audio_bytes)
+        config = speech.RecognitionConfig(
+            language_code="en-US",
+        )
+        resp = speech_client.recognize(config=config, audio=audio)
+        transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
+        return jsonify(transcript=transcript), 200
+    except NotImplementedError as e:
+        return jsonify(error=str(e)), 501
+    except Exception as e:
+        return jsonify(error="Transcription failed"), 500
 
 # List tasks route
 @app.route('/api/tasks', methods=['GET'])
@@ -91,30 +97,37 @@ def list_tasks():
 # process tasks route
 @app.route('/api/save_task', methods=['POST'])
 def save_task():
-    data = request.get_json()
-    print("Received JSON:", data)
+    try:
+        data = request.get_json()
+        print("Received JSON:", data)
 
-    if not data or "transcript" not in data:
-        print("No transcript provided")
-        return jsonify(error='Transcript is required'), 400
+        if not data or "transcript" not in data:
+            print("No transcript provided")
+            return jsonify(error='Transcript is required'), 400
 
-    transcript = data["transcript"]
-    parsed_tasks = task_parser.parse_transcript(transcript)
+        transcript = data["transcript"]
+        parsed_tasks = task_parser.parse_transcript(transcript)
 
-    if not isinstance(parsed_tasks, list):
-        return jsonify(error="Failed to parse tasks"), 500
+        if not isinstance(parsed_tasks, list):
+            return jsonify(error="Failed to parse tasks"), 500
+        
+        count = 0
+        for task_data in parsed_tasks:
+            task_text = task_data.get("text")
+            due_date = task_data.get("due")
+            print(f"Trying to save task: {task_text} (Due: {due_date})")
+            if task_text:
+                create_task(task_text, due_date)
+                count += 1   
+        print(f"Saved {count} tasks to database")
+        return jsonify(message=f'{count} tasks saved'), 200
     
-    count = 0
-    for task_data in parsed_tasks:
-        task_text = task_data.get("text")
-        due_date = task_data.get("due")
-        print(f"Trying to save task: {task_text} (Due: {due_date})")
-        if task_text:
-            create_task(task_text, due_date)
-            count += 1
-            
-    print(f"Saved {count} tasks to database")
-    return jsonify(message=f'{count} tasks saved'), 200
+    except NotImplementedError as e:
+        return jsonify(error=str(e)), 501
+    
+    except Exception as e:
+        return jsonify(error="Save task failed"), 500
+    
 
 @app.route('/appearance', methods=['GET'])
 def appearance():
@@ -150,5 +163,5 @@ def delete_task_route(task_id):
 
 if __name__ == '__main__':
     with app.app_context():
-        init_db()#initialize the tasks database
+        db.create_all()#initialize the tasks database
     app.run(debug=True)
