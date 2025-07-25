@@ -76,6 +76,37 @@
         let recorder;
         let stream;
         
+        // Initialize media recording
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(
+            mediaStream => {
+                stream = mediaStream;
+                recorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm'});
+                    chunks = [];
+
+                    const form = new FormData();
+                    form.append('audio', blob, 'recording.webm')
+
+                    try {
+                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                        const payload = await res.json();
+                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                        transcriptArea.value = payload.transcript;
+                    } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptArea.value = 'Error transcribing audio. Please try again.';
+                    }
+                };
+            }
+        ).catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        });
+        
         //The pop-up for events
         document.querySelectorAll('.btn-sync').forEach(button => {
             button.addEventListener('click', function () {
@@ -114,38 +145,6 @@
         document.getElementById('cancel-task-btn').addEventListener('click', () => {
             document.getElementById('task-popup').style.display = 'none';
             });
-        });
-
-        // Initialize media recording
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(
-            mediaStream => {
-                stream = mediaStream;
-                recorder = new MediaRecorder(stream);
-                let chunks = [];
-
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const blob = new Blob(chunks, { type: 'audio/webm'});
-                    chunks = [];
-
-                    const form = new FormData();
-                    form.append('audio', blob, 'recording.webm')
-
-                    try {
-                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                        const payload = await res.json();
-                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
-                        transcriptArea.value = payload.transcript;
-                    } catch (error) {
-                        console.error('Error transcribing audio:', error);
-                        transcriptArea.value = 'Error transcribing audio. Please try again.';
-                    }
-                };
-            }
-        ).catch(error => {
-            console.error('Error accessing microphone:', error);
-            alert('Could not access microphone. Please check permissions.');
-        });
 
         // Record button
         recordButton.addEventListener('click', function() {
@@ -237,7 +236,8 @@
                 alert('Error saving task: ' + error.message);
             }
         });
-    });
+    });   
+
 </script>
 <div id="confirmation-popup" style="display: none;" class="popup-overlay">
   <div class="popup-box">
