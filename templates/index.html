@@ -66,6 +66,32 @@
 
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
+    //converts date strings like "today", "tomorrow", or weekdays to a date input format
+    //wouldnt work if its says 7pm today. now this function strips the time and returns the date
+    function convertToDateInput(dateStr) {
+        if (!dateStr) return '';
+
+        const today = new Date();
+        let target = new Date();
+
+        if (dateStr.toLowerCase() === 'today') {
+            target = new Date();
+        } else if (dateStr.toLowerCase() === 'tomorrow') {
+            target.setDate(today.getDate() + 1);
+        } else {
+            const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            if (weekdays.includes(dateStr)) {
+                const targetDay = weekdays.indexOf(dateStr);
+                const diff = (targetDay - today.getDay() + 7) % 7 || 7;
+                target.setDate(today.getDate() + diff);
+            } else {
+                const parsed = new Date(dateStr + " " + today.getFullYear());
+                if (!isNaN(parsed)) target = parsed;
+            }
+        }
+
+        return target.toISOString().split('T')[0]; // returns 'YYYY-MM-DD'
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         const recordButton = document.getElementById('btn-record');
@@ -107,44 +133,60 @@
             alert('Could not access microphone. Please check permissions.');
         });
         
-        //The pop-up for events
+        //The popup for g-events
         document.querySelectorAll('.btn-sync').forEach(button => {
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
                 const taskContent = taskItem.querySelector('.task-content').innerText;
 
-                //prefils the popup with task details
-                document.getElementById('popup-title').value = taskContent.trim();
-                document.getElementById('popup-description').value = '';
-                document.getElementById('popup-start-time').value = '';
-                document.getElementById('popup-end-time').value = '';
-                document.getElementById('popup-recurrence').value = '';
-                document.getElementById('confirmation-popup').style.display = 'block';
+                //send to genai to extract structured info
+                fetch('/api/parse_task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: taskContent })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    //fill the popup using parsed task
+                    document.getElementById('popup-title').value = data.text || taskContent;
+                    document.getElementById('popup-description').value = '';
+                    document.getElementById('popup-start-time').value = '';  // optionally use convertToDateTimeLocal(data.start_time)
+                    document.getElementById('popup-end-time').value = '';
+                    document.getElementById('popup-recurrence').value = data.repeat || '';
+                    document.getElementById('confirmation-popup').style.display = 'block';
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to parse task for calendar.");
+                });
             });
         });
-        
-        //close the popup feature
-        document.getElementById('cancel-btn').addEventListener('click', () => {
-            document.getElementById('confirmation-popup').style.display = 'none';
-        });
-        //popup for the google tasks
+
+        //popup for the g-tasks
         document.querySelectorAll('.btn-sync-task').forEach(button => {
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
                 const taskContent = taskItem.querySelector('.task-content').innerText;
-
-                //prefills task popup
-                document.getElementById('task-title').value = taskContent.trim();
-                document.getElementById('task-due-date').value = '';
-
-                document.getElementById('task-popup').style.display = 'block';
+                
+                //send to genai to extract structured info
+                fetch('/api/parse_task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: taskContent })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    //fill the popup using parsed task
+                    document.getElementById('task-title').value = data.text || taskContent;
+                    document.getElementById('task-due-date').value = convertToDateInput(data.due);
+                    document.getElementById('task-popup').style.display = 'block';
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to parse task for Google Task.");
+                });
             });
         });
-       
-        //close the task popup feature
-        document.getElementById('cancel-task-btn').addEventListener('click', () => {
-            document.getElementById('task-popup').style.display = 'none';
-            });
 
         // Record button
         recordButton.addEventListener('click', function() {

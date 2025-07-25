@@ -6,8 +6,10 @@ Each task must be formatted as:
 - "text": the task itself (e.g., “Go to the gym”)
 - "start_time": when the task or event starts (e.g., “09:00 AM” or null)
 - "end_time": when it ends (e.g., “12:00 PM” or null)
-- "repeat": how often it repeats: one of ["none", "daily", "weekdays", "weekly"] — or null if not mentioned
-- "due": if a specific date/time is mentioned (e.g. “Friday” or “tomorrow”), otherwise null
+- "start_date": when the task or event begins (e.g., “Monday” or “July 29th”, or null)
+- "end_date": when it ends (e.g., “August 14th”, or null)
+- "repeat": how often it repeats: one of ["none", "daily", "weekdays", "weekly", "monthly"] — or null if not mentioned
+- "due": if it’s a one-time deadline (e.g., “Friday” or “tomorrow”), otherwise null
 
 Respond only with a JSON array. No explanations, no markdown, no headings.
 
@@ -20,6 +22,8 @@ Output:
     "text": "Math class",
     "start_time": "09:00 AM",
     "end_time": "12:00 PM",
+    "start_date": null,
+    "end_date": null,
     "repeat": "weekdays",
     "due": null
   }
@@ -32,6 +36,8 @@ Output:
     "text": "Go to the gym",
     "start_time": null,
     "end_time": null,
+    "start_date": null,
+    "end_date": null,
     "repeat": null,
     "due": "tomorrow"
   },
@@ -39,9 +45,25 @@ Output:
     "text": "email professor",
     "start_time": null,
     "end_time": null,
+    "start_date": null,
+    "end_date": null,
     "repeat": null,
     "due": "Friday"
   }
 ]
 
-Transcript:
+Transcript: "Math class every weekday. It starts on Monday and ends August 14th"
+Output:
+[
+  {
+    "text": "Math class",
+    "start_time": "09:00 AM",
+    "end_time": "12:00 PM",
+    "start_date": "Monday",
+    "end_date": "August 14th",
+    "repeat": "weekdays",
+    "due": null
+  }
+]
+
+If the task sounds like a class and no time is mentioned, assume it starts at 09:00 AM and ends at 12:00 PM.

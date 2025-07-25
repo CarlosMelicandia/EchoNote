@@ -161,6 +161,21 @@ def delete_task_route(task_id):
     else:
         return jsonify(error='Task not found'), 404
 
+@app.route("/api/parse_task", methods=["POST"])
+def parse_task():
+    data = request.get_json()
+    raw_text = data.get("text", "")
+
+    if not raw_text:
+        return jsonify({"error": "Missing task text"}), 400
+
+    parsed = task_parser.parse_transcript(raw_text)
+
+    if parsed and isinstance(parsed, list) and len(parsed) > 0:
+        return jsonify(parsed[0])  # Just return the first parsed task
+    else:
+        return jsonify({"error": "No task extracted"}), 400
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()#initialize the tasks database
