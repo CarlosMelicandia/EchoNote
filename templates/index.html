@@ -200,31 +200,50 @@
 </script>
 <div id="confirmation-popup" style="display: none;" class="popup-overlay">
   <div class="popup-box">
-    <h3>Confirm Task</h3>
+    <h3>Confirm Event</h3>
     <form id="confirm-form">
-      <label>Task:</label>
-      <input type="text" id="popup-text" required />
+      <label for="popup-title">Title:</label>
+      <input type="text" id="popup-title" name="title" required />
+    
+      <label for="popup-description">Description:</label>
+      <textarea id="popup-description" name="description"></textarea>
 
-      <label>Start Time:</label>
-      <input type="time" id="popup-start-time" />
+      <label for="popup-start-time">Start Time:</label>
+      <input type="datetime-local" id="popup-start-time" name="start_time" required />
 
-      <label>End Time:</label>
-      <input type="time" id="popup-end-time" />
+      <label for="popup-end-time">End Time:</label>
+      <input type="datetime-local" id="popup-end-time" name="end_time" required />
 
-      <label>Repeat:</label>
-      <select id="popup-repeat">
-        <option value="none">None</option>
+      <label for="popup-recurrence">Recurrence:</label>
+      <select id="popup-recurrence" name="recurrence">
+        <option value="">None</option>
         <option value="daily">Daily</option>
         <option value="weekdays">Weekdays</option>
         <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
       </select>
-
-      <label>Due (optional):</label>
-      <input type="text" id="popup-due" />
 
       <div class="form-buttons">
         <button type="submit">Confirm & Add</button>
         <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="task-popup" style="display: none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Task</h3>
+    <form id="task-form">
+      <label for="task-title">Title:</label>
+      <input type="text" id="task-title" name="title" required />
+
+      <label for="task-due-date">Due Date:</label>
+      <input type="date" id="task-due-date" name="due_date" />
+
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-task-btn">Cancel</button>
       </div>
     </form>
   </div>
