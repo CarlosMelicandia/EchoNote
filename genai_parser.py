@@ -41,5 +41,5 @@ class TaskParser:
 
 '''class that reads a transcript and sends it to Gemini using a custom prompt.
 returns a list of tasks based on what the user said. This lets us take 
-unstructured voice input and turn it into structured to-do items for the project.
+unstructured voice input and turn it into structured to-do items for the project. testing
 '''
