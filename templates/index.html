@@ -10,12 +10,6 @@
             <div class="mic-icon"></div>
         </div>
         <button id="btn-stop" disabled>Stop Recording</button>
-        <div class="recording-lines">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div>
         <textarea id="transcript" placeholder="Transcript appears here..."></textarea>
         <button id="btn-save">Save as Task</button>
     </div>
@@ -41,7 +35,6 @@
                         <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
                         <button class="btn-sync" data-task-id="{{ task.id }}">Add as Event</button>
                     </div>
-                    <div class="task-waveform"></div>
                 </div>
                 {% endfor %}
             {% else %}
