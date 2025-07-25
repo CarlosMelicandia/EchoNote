@@ -40,6 +40,7 @@
                         <button class="btn-edit" data-task-id="{{ task.id }}">Edit</button>
                         <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
                         <button class="btn-sync" data-task-id="{{ task.id }}">Sync to Google Calendar</button>
+                        <button class="btn-sync-task" data-task-id="{{ task.id }}">Sync to Google Task</button>
                     </div>
                     <div class="task-waveform"></div>
                 </div>
@@ -75,6 +76,46 @@
         let recorder;
         let stream;
         
+        //The pop-up for events
+        document.querySelectorAll('.btn-sync').forEach(button => {
+            button.addEventListener('click', function () {
+                const taskItem = this.closest('.task-item');
+                const taskContent = taskItem.querySelector('.task-content').innerText;
+
+                //prefils the popup with task details
+                document.getElementById('popup-title').value = taskContent.trim();
+                document.getElementById('popup-description').value = '';
+                document.getElementById('popup-start-time').value = '';
+                document.getElementById('popup-end-time').value = '';
+                document.getElementById('popup-recurrence').value = '';
+                document.getElementById('confirmation-popup').style.display = 'block';
+            });
+        });
+        
+        //close the popup feature
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            document.getElementById('confirmation-popup').style.display = 'none';
+        });
+        //popup for the google tasks
+        document.querySelectorAll('.btn-sync-task').forEach(button => {
+            button.addEventListener('click', function () {
+                const taskItem = this.closest('.task-item');
+                const taskContent = taskItem.querySelector('.task-content').innerText;
+
+                //prefills task popup
+                document.getElementById('task-title').value = taskContent.trim();
+                document.getElementById('task-due-date').value = '';
+
+                document.getElementById('task-popup').style.display = 'block';
+            });
+        });
+       
+        //close the task popup feature
+        document.getElementById('cancel-task-btn').addEventListener('click', () => {
+            document.getElementById('task-popup').style.display = 'none';
+            });
+        });
+
         // Initialize media recording
         navigator.mediaDevices.getUserMedia({ audio: true }).then(
             mediaStream => {
