@@ -10,16 +10,16 @@
             <div class="mic-icon"></div>
         </div>
         <button id="btn-stop" disabled>Stop Recording</button>
-        <div class="recording-lines">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div>
-        <textarea id="transcript" placeholder="Transcript appears here..."></textarea>
-        <button id="btn-save">Save as Task</button>
+        <textarea placeholder="What would you like to accomplish today" 
+        id="transcript" 
+        name="transcript" 
+        rows="4" 
+        style="overflow: hidden; 
+        word-wrap: break-word; 
+        resize: none; 
+        height: 320px;"></textarea>  
+        <button id="btn-save">Save</button>
     </div>
-    
     <div class="tasks-panel">
         <h2>Tasks</h2>
         <div class="task-list">
