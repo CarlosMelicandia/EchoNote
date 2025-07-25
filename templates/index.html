@@ -39,6 +39,7 @@
                         {% endif %}
                         <button class="btn-edit" data-task-id="{{ task.id }}">Edit</button>
                         <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
+                        <button class="btn-sync" data-task-id="{{ task.id }}">Sync to Google Calendar</button>
                     </div>
                     <div class="task-waveform"></div>
                 </div>
@@ -53,6 +54,18 @@
 
 {% block scripts %}
 <script>
+    function convertTo24Hour(timeStr) {
+        if (!timeStr) return "";
+
+        const [time, modifier] = timeStr.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+
+        if (modifier === "PM" && hours < 12) hours += 12;
+        if (modifier === "AM" && hours === 12) hours = 0;
+
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const recordButton = document.getElementById('btn-record');
         const stopButton = document.getElementById('btn-stop');
@@ -185,4 +198,35 @@
         });
     });
 </script>
+<div id="confirmation-popup" style="display: none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Task</h3>
+    <form id="confirm-form">
+      <label>Task:</label>
+      <input type="text" id="popup-text" required />
+
+      <label>Start Time:</label>
+      <input type="time" id="popup-start-time" />
+
+      <label>End Time:</label>
+      <input type="time" id="popup-end-time" />
+
+      <label>Repeat:</label>
+      <select id="popup-repeat">
+        <option value="none">None</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Weekdays</option>
+        <option value="weekly">Weekly</option>
+      </select>
+
+      <label>Due (optional):</label>
+      <input type="text" id="popup-due" />
+
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
