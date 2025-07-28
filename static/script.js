@@ -38,6 +38,22 @@ document.addEventListener('DOMContentLoaded', function() {
         link.classList.add('active');
       }
     });
+
+    // Fetch and render all items (tasks and events)
+    async function fetchAllItems() {
+      const response = await fetch('/api/all_items');
+      const items = await response.json();
+
+      items.forEach(item => {
+        if (item.type === 'task') {
+          // render as task
+          renderTask(item);
+        } else if (item.type === 'event') {
+          // render as calendar event
+          renderEvent(item);
+        }
+      });
+    }
   
     // Initialize any other common UI elements
     
@@ -277,4 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
 });
+

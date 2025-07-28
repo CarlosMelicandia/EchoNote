@@ -73,14 +73,10 @@ def transcribe_audio():
         language_code="en-US",
     )
     resp = speech_client.recognize(config=config, audio=audio)
-    # Join all of the results into one string
     transcript = " ".join(r.alternatives[0].transcript for r in resp.results)
-    parsed_tasks = task_parser.parse_transcript(transcript)
 
-    return jsonify(
-        transcript=transcript,
-        tasks=parsed_tasks
-    ), 200
+    return jsonify(transcript=transcript), 200
+
 # List tasks route
 @app.route('/api/tasks', methods=['GET'])
 def list_tasks():
@@ -96,18 +92,26 @@ def list_tasks():
 def save_task():
     data = request.get_json()
     print("Received JSON:", data)
-    if not data or "tasks" not in data:
-        print("No tasks provided")
-        return jsonify(error='Task name is required'), 400
-    tasks = data["tasks"]
+
+    if not data or "transcript" not in data:
+        print("No transcript provided")
+        return jsonify(error='Transcript is required'), 400
+
+    transcript = data["transcript"]
+    parsed_tasks = task_parser.parse_transcript(transcript)
+
+    if not isinstance(parsed_tasks, list):
+        return jsonify(error="Failed to parse tasks"), 500
+    
     count = 0
-    for task_data in tasks:
+    for task_data in parsed_tasks:
         task_text = task_data.get("text")
         due_date = task_data.get("due")
         print(f"Trying to save task: {task_text} (Due: {due_date})")
         if task_text:
             create_task(task_text, due_date)
             count += 1
+            
     print(f"Saved {count} tasks to database")
     return jsonify(message=f'{count} tasks saved'), 200
 
@@ -115,5 +119,3 @@ if __name__ == '__main__':
     with app.app_context():
         init_db()#initialize the tasks database
     app.run(debug=True)
-
-    
