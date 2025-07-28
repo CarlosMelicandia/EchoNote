@@ -2,12 +2,18 @@ import os
 from google.cloud import speech
 from google.auth.exceptions import DefaultCredentialsError
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from database import db, create_task, get_all_tasks, update_task, delete_task
 from genai_parser import TaskParser
-task_parser = TaskParser()
+import google.oauth2.credentials
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import Flow
 
+task_parser = TaskParser()
 app = Flask(__name__)
+CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev_secret_key")
 #"sqlite:///./echo_note.db"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///echo_note.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -176,6 +182,69 @@ def parse_task():
         return jsonify(parsed[0])  # Just return the first parsed task
     else:
         return jsonify({"error": "No task extracted"}), 400
+
+SCOPES = ["https://www.googleapis.com/auth/tasks"]
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
+
+@app.route("/authorize")
+def authorize():
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uris": ["http://127.0.0.1:5000/oauth2callback"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token"
+            }
+        },
+        scopes=["https://www.googleapis.com/auth/tasks"],
+        redirect_uri=url_for("oauth2callback", _external=True)
+    )
+    auth_url, _ = flow.authorization_url(prompt="consent")
+    return redirect(auth_url)
+
+@app.route("/oauth2callback")
+def oauth2callback():
+    flow = Flow.from_client_secrets_file(
+        "client_secret.json",
+        scopes=SCOPES,
+        redirect_uri=url_for("oauth2callback", _external=True)
+    )
+    flow.fetch_token(authorization_response=request.url)
+    creds = flow.credentials
+    session["credentials"] = {
+        "token": creds.token,
+        "refresh_token": creds.refresh_token,
+        "token_uri": creds.token_uri,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
+        "scopes": creds.scopes
+    }
+    return redirect(url_for("index"))
+
+def get_tasks_service():
+    if "credentials" not in session:
+        return None
+    creds = google.oauth2.credentials.Credentials(**session["credentials"])
+    return build("tasks", "v1", credentials=creds)
+
+@app.route("/api/google_task_create", methods=["POST"])
+def google_task_create():
+    service = get_tasks_service()
+    if not service:
+        return jsonify({"error": "Not authorized with Google"}), 401
+
+    data = request.get_json()
+    title = data.get("title")
+    due_date = data.get("due_date")
+
+    task_body = {"title": title}
+    if due_date:
+        task_body["due"] = f"{due_date}T00:00:00.000Z"  # Google expects RFC3339
+
+    created_task = service.tasks().insert(tasklist='@default', body=task_body).execute()
+    return jsonify(created_task)
 
 if __name__ == '__main__':
     with app.app_context():

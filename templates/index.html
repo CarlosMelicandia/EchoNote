@@ -56,6 +56,8 @@
                             <button class="btn-sync-task" data-task-id="{{ task.id }}">
                             <i class="fa-solid fa-list-check"></i>
                             </button>
+                            <a href="/authorize" class="btn-connect-google">Connect Google Tasks</a>
+
                           
                     </div>
                     <div class="task-waveform"></div>
@@ -202,6 +204,33 @@
                     alert("Failed to parse task for Google Task.");
                 });
             });
+        });
+
+        // Handle Google Task form submit
+        document.getElementById('task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('task-title').value;
+            const dueDate = document.getElementById('task-due-date').value;
+
+            fetch('/api/google_task_create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title: title, due_date: dueDate })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Task added to Google Tasks ✅");
+                document.getElementById('task-popup').style.display = 'none';
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to add to Google Tasks");
+            });
+        });
+
+        // Cancel button for task popup
+        document.getElementById('cancel-task-btn').addEventListener('click', function() {
+            document.getElementById('task-popup').style.display = 'none';
         });
 
         // Record button
