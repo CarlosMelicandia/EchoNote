@@ -39,11 +39,19 @@ print("speech_client is", type(speech_client).__name__)
 
 # Define nav links to be used across routes
 def get_nav_links():
-    return [
+    links = [
         {'href': '/', 'text': 'Home', 'endpoint': 'index'},
         {'href': '/draw', 'text': 'Draw', 'endpoint': 'draw'},
         {'href': '/appearance', 'text': 'Appearance', 'endpoint': 'appearance'}
     ]
+    
+    # ✅ Only add if user hasn't connected Google yet
+    if "credentials" not in session:
+        links.append({'href': '/authorize', 'text': 'Connect Google Tasks', 'endpoint': 'authorize'})
+    else:
+        links.append({'href': '#', 'text': 'Google Connected', 'endpoint': ''})
+    
+    return links
 
 #updated to use Task model not Note model
 @app.route('/', methods=['GET'])
