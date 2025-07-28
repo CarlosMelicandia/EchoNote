@@ -15,6 +15,9 @@
                 </div>
             </div>
         </div>
+        <script>
+            window.isAuthenticated = {{ current_user.is_authenticated|tojson }};
+        </script>
         <script src="{{ url_for('static', filename='script.js') }}"></script>
         {% block scripts %}{% endblock %}
     </body>

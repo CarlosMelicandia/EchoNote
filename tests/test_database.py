@@ -1,43 +1,50 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from database import Base, Task, create_task, get_all_tasks, update_task, delete_task
-
-TEST_DATABASE_URL = "sqlite:///:memory:"
+from flask import Flask
+from database import db, User, Task, create_task, get_all_tasks, update_task, delete_task
 
 @pytest.fixture(scope="function")
-def db_session():
-    engine = create_engine(TEST_DATABASE_URL)
-    TestingSessionLocal = sessionmaker(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
-    yield session
-    session.close()
+def app():
+    app = Flask(__name__)
+    app.config.update({
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+    })
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+        yield app
 
-@pytest.fixture(autouse=True)
-def override_session(monkeypatch, db_session):
-    monkeypatch.setattr("database.SessionLocal", lambda: db_session)
+@pytest.fixture(scope="function")
+def session(app):
+    return db.session
 
-def test_create_and_get_task():
-    create_task("Write unit tests")
-    tasks = get_all_tasks()
+def make_user(session, username="tester"):
+    """Helper to create & return a User so tasks can refer to it."""
+    u = User(username=username, pw_hash="fakehash")
+    session.add(u)
+    session.commit()
+    return u
+
+def test_create_and_get_task(app, session):
+    user = make_user(session)
+    t = create_task(user.id, "Write unit tests")
+    tasks = get_all_tasks(user.id)
     assert len(tasks) == 1
     assert tasks[0].name == "Write unit tests"
     assert tasks[0].completed is False
 
-def test_update_task():
-    create_task("Initial name")
-    updated = update_task(1, name="Updated name", completed=True)
+def test_update_task(app, session):
+    user = make_user(session, username="updater")
+    t = create_task(user.id, "Initial name")
+    updated = update_task(t.id, name="Updated name", completed=True)
     assert updated.name == "Updated name"
     assert updated.completed is True
 
-def test_delete_task():
-    create_task("Task to delete")
-    deleted = delete_task(1)
+def test_delete_task(app, session):
+    user = make_user(session, username="deleter")
+    t = create_task(user.id, "Task to delete")
+    deleted = delete_task(t.id)
     assert deleted is True
-    tasks = get_all_tasks()
-    assert len(tasks) == 0
+    # after deletion, get_all_tasks should be empty
+    assert get_all_tasks(user.id) == []
