@@ -1,45 +1,111 @@
 // Common functionality across pages
-document.addEventListener('DOMContentLoaded', function() {
-    // Load theme from localStorage with robust error handling
+
+// default dark theme
+const defaultTheme = {
+  bgPrimary:   '#212121',
+  bgSecondary: '#303030',
+  textPrimary: '#ececf1',
+  textSecondary:'#ffffff',
+  accent:      '#FCFCFD',
+  buttonText:  '#36395A',
+  borderColor: '#444'
+};
+
+// apply theme object to CSS variables
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty('--bg-primary',   theme.bgPrimary);
+  root.style.setProperty('--bg-secondary', theme.bgSecondary);
+  root.style.setProperty('--text-primary', theme.textPrimary);
+  root.style.setProperty('--text-secondary', theme.textSecondary);
+  root.style.setProperty('--accent',       theme.accent);
+  root.style.setProperty('--button-text',  theme.buttonText);
+  root.style.setProperty('--border-color', theme.borderColor);
+}
+
+// load the theme - try server first, then localStorage, then default
+async function loadTheme() {
+  let theme = defaultTheme;
+
+  if (window.currentUser) {
     try {
-        const savedThemeJSON = localStorage.getItem('echoNoteTheme');
-        console.log('Raw theme data from localStorage:', savedThemeJSON);
-        
-        if (savedThemeJSON && savedThemeJSON !== 'undefined') {
-            const savedTheme = JSON.parse(savedThemeJSON);
-            console.log('Parsed theme data:', savedTheme);
-            
-            // Apply theme only if we have valid data
-            if (savedTheme && typeof savedTheme === 'object') {
-                // Apply each property with fallbacks
-                document.documentElement.style.setProperty('--bg-primary', savedTheme.bgPrimary || '#212121');
-                document.documentElement.style.setProperty('--bg-secondary', savedTheme.bgSecondary || '#303030');
-                document.documentElement.style.setProperty('--text-primary', savedTheme.textPrimary || '#ececf1');
-                document.documentElement.style.setProperty('--text-secondary', savedTheme.textSecondary || '#ffffff');
-                document.documentElement.style.setProperty('--accent', savedTheme.accent || '#FCFCFD');
-                document.documentElement.style.setProperty('--button-text', savedTheme.buttonText || '#36395A');
-                document.documentElement.style.setProperty('--border-color', savedTheme.borderColor || '#444');
-                
-                console.log('Theme applied successfully');
+      const resp = await fetch('/api/get_theme');
+      if (resp.ok) {
+        theme = await resp.json();
+      } else {
+        throw new Error('Server returned ' + resp.status);
+      }
+    } catch (err) {
+      console.warn('Could not fetch theme from server, falling back to localStorage', err);
+      const saved = localStorage.getItem('echoNoteTheme');
+      if (saved) theme = JSON.parse(saved);
+    }
+  } else {
+    const saved = localStorage.getItem('echoNoteTheme');
+    if (saved) theme = JSON.parse(saved);
+  }
+
+  applyTheme(theme);
+}
+document.addEventListener('DOMContentLoaded', async function() {
+    const defaultTheme = {
+        bgPrimary:   '#212121',
+        bgSecondary: '#303030',
+        textPrimary: '#ececf1',
+        textSecondary:'#ffffff',
+        accent:      '#FCFCFD',
+        buttonText:  '#36395A',
+        borderColor: '#444'
+    };
+
+    //helper to apply theme object to CSS variables
+    function applyTheme(theme) {
+    for (const [key, value] of Object.entries(theme)) {
+      const cssVar = '--' + key.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+      document.documentElement.style.setProperty(cssVar, value);
+    }
+  }
+    //try server if logged in
+    let theme = null;
+    if (window.isAuthenticated) {
+        try {
+            const resp = await fetch('/api/get_theme');
+            if (resp.ok) {
+                theme = await resp.json();
             }
-        } else {
-            console.log('No saved theme found in localStorage');
+        } catch (err) {
+            console.warn('Could not fetch theme from server, falling back to localStorage', err);
         }
-    } catch (error) {
-        console.error('Error loading theme:', error);
     }
 
-    // Add active class to current nav item
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('nav a');
-    
-    navLinks.forEach(link => {
-      if (link.getAttribute('href') === currentPath) {
-        link.classList.add('active');
-      }
-    });
+    //if no server theme, try localStorage
+    if (!theme) {
+        try {
+            const saved = localStorage.getItem('echoNoteTheme');
+            if (saved) theme = JSON.parse(saved);       
+        } catch (err) {
+            console.warn('Could not parse localStorage theme, using default', err);
+        }
+    }
+    //if no theme found, use default
+    applyTheme(theme || defaultTheme);
+});
+
+
+// Nav‐link highlighting
+function highlightNav() {
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('nav a').forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === currentPath);
+  });
+}
+
+
+// once the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+loadTheme();
+    highlightNav();
   
-    // Initialize any other common UI elements
     
     // Handle keyboard shortcuts that should work across the app
     document.addEventListener('keydown', function(e) {

@@ -1,7 +1,33 @@
 <nav class="navbar">
-    <ul>
-        {% for link in nav_links %}
-            <li><a href="{{ link.href }}" class="{{ 'active' if request.endpoint == link.endpoint else '' }}">{{ link.text }}</a></li>
-        {% endfor %}
-    </ul>
+  <ul>
+    {% if current_user.is_authenticated %}
+      <li>
+        <a href="{{ url_for('logout') }}"
+           class="{{ 'active' if request.endpoint=='logout' else '' }}">
+           Logout
+        </a>
+      </li>
+    {% else %}
+      <li>
+        <a href="{{ url_for('login') }}"
+           class="{{ 'active' if request.endpoint=='login' else '' }}">
+           Login
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('sign_up') }}"
+           class="{{ 'active' if request.endpoint=='sign_up' else '' }}">
+           Sign Up
+        </a>
+      </li>
+    {% endif %}
+    {% for link in nav_links %}
+      <li>
+        <a href="{{ link.href }}"
+           class="{{ 'active' if request.endpoint==link.endpoint else '' }}">
+           {{ link.text }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
 </nav>
