@@ -38,17 +38,6 @@ class TaskParser:
             print("Error parsing transcript:", e)
             print("Raw Gemini output:", response.text if 'response' in locals() else "None")
             return []
-        
-    def prefill_gtask(self, text):
-        tasks = self.parse_transcript(text)
-        for task in tasks:
-            #fallback: if due is missing but start_date is present, set due to start_date
-            if not task.get("due") and task.get("start_date"):
-                task["due"] = task["start_date"]
-        return tasks
-
-    def prefill_gcalen(self, text, start_date, end_date, start_time, end_time, due_date):
-        return self.parse_transcript(text)
 
 '''class that reads a transcript and sends it to Gemini using a custom prompt.
 returns a list of tasks based on what the user said. This lets us take 

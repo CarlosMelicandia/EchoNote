@@ -25,10 +25,7 @@
         <div class="task-list">
             {% if tasks %}
                 {% for task in tasks %}
-                <div class="task-item {% if task.completed %}completed{% endif %}" 
-                    data-task-id="{{ task.id }}" 
-                    data-raw="{{ task.raw_text }}">
-                    
+                <div class="task-item {% if task.completed %}completed{% endif %}" data-task-id="{{ task.id }}">
                     <div class="task-content">
                         {{ task.name }}
                         {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
@@ -155,26 +152,22 @@
         document.querySelectorAll('.btn-sync').forEach(button => {
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
-                const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
+                const taskContent = taskItem.querySelector('.task-content').innerText;
 
                 //send to genai to extract structured info
-                fetch('/api/prefill_gcalen', {
+                fetch('/api/parse_task', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: taskContent })
                 })
                 .then(res => res.json())
                 .then(data => {
-                    const date = convertToDateInput(data.start_date || data.due);
                     //fill the popup using parsed task
                     document.getElementById('popup-title').value = data.text || taskContent;
                     document.getElementById('popup-description').value = '';
-                    document.getElementById('popup-start-date').value = date;
-                    document.getElementById('popup-end-date').value = date;
-                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
-                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
+                    document.getElementById('popup-start-time').value = '';  // optionally use convertToDateTimeLocal(data.start_time)
+                    document.getElementById('popup-end-time').value = '';
                     document.getElementById('popup-recurrence').value = data.repeat || '';
-                    
                     document.getElementById('confirmation-popup').style.display = 'block';
                 })
                 .catch(err => {
@@ -191,7 +184,7 @@
                 const taskContent = taskItem.querySelector('.task-content').innerText;
                 
                 //send to genai to extract structured info
-                fetch('/api/prefill_gtask', {
+                fetch('/api/parse_task', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: taskContent })
@@ -200,8 +193,7 @@
                 .then(data => {
                     //fill the popup using parsed task
                     document.getElementById('task-title').value = data.text || taskContent;
-                    const dueDate = data.due || data.start_date || '';
-                    document.getElementById('task-due-date').value = convertToDateInput(dueDate);
+                    document.getElementById('task-due-date').value = convertToDateInput(data.due);
                     document.getElementById('task-popup').style.display = 'block';
                 })
                 .catch(err => {
@@ -341,17 +333,11 @@
       <label for="popup-description">Description:</label>
       <textarea id="popup-description" name="description"></textarea>
 
-      <label for="popup-start-date">Start Date:</label>
-      <input type="date" id="popup-start-date" name="start_date" required />
-
       <label for="popup-start-time">Start Time:</label>
-      <input type="time" id="popup-start-time" name="start_time" required />
-
-      <label for="popup-end-date">End Date:</label>
-      <input type="date" id="popup-end-date" name="end_date" required />
+      <input type="datetime-local" id="popup-start-time" name="start_time" required />
 
       <label for="popup-end-time">End Time:</label>
-      <input type="time" id="popup-end-time" name="end_time" required />
+      <input type="datetime-local" id="popup-end-time" name="end_time" required />
 
       <label for="popup-recurrence">Recurrence:</label>
       <select id="popup-recurrence" name="recurrence">

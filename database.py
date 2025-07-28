@@ -15,7 +15,6 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = db.Column(db.String(100), nullable=True)
-    raw_text = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f"<Task(id={self.id}, name='{self.name}', completed={self.completed}, due_date='{self.due_date}')>"
@@ -23,11 +22,14 @@ class Task(db.Model):
 
 # CRUD operations
 
-def create_task(name: str, due_date=None, raw_text=None) -> Task:
-    task = Task(name=name, due_date=due_date, raw_text=raw_text)
+
+def create_task(name: str, due_date=None) -> Task:
+    task = Task(name=name, due_date=due_date)
     db.session.add(task)
     db.session.commit()
     return task
+
+
 
 def get_all_tasks() -> List[Task]:
     return Task.query.all()
