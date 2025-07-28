@@ -131,7 +131,7 @@ def save_task():
             due_date = task_data.get("due")
             print(f"Trying to save task: {task_text} (Due: {due_date})")
             if task_text:
-                create_task(task_text, due_date)
+                create_task(task_text, due_date, raw_text=transcript)
                 count += 1   
         print(f"Saved {count} tasks to database")
         return jsonify(message=f'{count} tasks saved'), 200
@@ -175,21 +175,42 @@ def delete_task_route(task_id):
     else:
         return jsonify(error='Task not found'), 404
 
-# Prefill task function
-@app.route("/api/parse_task", methods=["POST"])
-def parse_task():
+#route to prefill a google task event
+@app.route("/api/prefill_gtask", methods=["POST"])
+def prefill_gtask():
     data = request.get_json()
     raw_text = data.get("text", "")
 
     if not raw_text:
         return jsonify({"error": "Missing task text"}), 400
 
-    parsed = task_parser.parse_transcript(raw_text)
+    parsed = task_parser.prefill_gtask(raw_text)
 
     if parsed and isinstance(parsed, list) and len(parsed) > 0:
         return jsonify(parsed[0])  # Just return the first parsed task
     else:
         return jsonify({"error": "No task extracted"}), 400
+
+#route to prefill a google calendar event
+@app.route("/api/prefill_gcalen", methods=["POST"])
+def prefill_gcalen():
+    data = request.get_json()
+    raw_text = data.get("text", "")
+    start_date = data.get("start_date", "")
+    end_date = data.get("end_date", "")
+    start_time = data.get("start_time", "")
+    end_time = data.get("end_time", "")
+    due_date = data.get("due_date", "")
+
+    if not raw_text:
+        return jsonify({"error": "Missing event text"}), 400
+
+    parsed = task_parser.prefill_gcalen(raw_text, start_date, end_date, start_time, end_time, due_date)
+
+    if parsed and isinstance(parsed, list) and len(parsed) > 0:
+        return jsonify(parsed[0])  # Just return the first parsed task
+    else:
+        return jsonify({"error": "No event extracted"}), 400
 
 SCOPES = ["https://www.googleapis.com/auth/tasks"]
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
