@@ -8,6 +8,8 @@ from genai_parser import TaskParser
 import google.oauth2.credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import Flow
+from datetime import datetime
+from zoneinfo import ZoneInfo  # Python 3.9+
 
 task_parser = TaskParser()
 app = Flask(__name__)
@@ -212,11 +214,16 @@ def prefill_gcalen():
     else:
         return jsonify({"error": "No event extracted"}), 400
 
-SCOPES = ["https://www.googleapis.com/auth/tasks"]
+SCOPES = [
+    "https://www.googleapis.com/auth/tasks",
+    "https://www.googleapis.com/auth/calendar.events"
+]
+
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
 
 @app.route("/authorize")
 def authorize():
+    session.clear()
     flow = Flow.from_client_config(
         {
             "web": {
@@ -227,7 +234,7 @@ def authorize():
                 "token_uri": "https://oauth2.googleapis.com/token"
             }
         },
-        scopes=["https://www.googleapis.com/auth/tasks"],
+        scopes=SCOPES,
         redirect_uri=url_for("oauth2callback", _external=True)
     )
     auth_url, _ = flow.authorization_url(prompt="consent")
@@ -258,6 +265,12 @@ def get_tasks_service():
     creds = google.oauth2.credentials.Credentials(**session["credentials"])
     return build("tasks", "v1", credentials=creds)
 
+def get_calendar_service():
+    if "credentials" not in session:
+        return None
+    creds = google.oauth2.credentials.Credentials(**session["credentials"])
+    return build("calendar", "v3", credentials=creds)
+
 @app.route("/api/google_task_create", methods=["POST"])
 def google_task_create():
     service = get_tasks_service()
@@ -274,6 +287,39 @@ def google_task_create():
 
     created_task = service.tasks().insert(tasklist='@default', body=task_body).execute()
     return jsonify(created_task)
+
+@app.route("/api/google_event_create", methods=["POST"])
+def google_event_create():
+    service = get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authorized with Google"}), 401
+
+    data = request.get_json()
+    print("📌 Incoming event data:", data)
+
+    tz_name = data.get("timezone", "UTC")
+
+    def to_rfc3339(dt):
+        if not dt:
+            return None
+        naive = datetime.fromisoformat(dt)
+        return naive.replace(tzinfo=ZoneInfo(tz_name)).isoformat()
+
+    start = to_rfc3339(data.get("start"))
+    end = to_rfc3339(data.get("end"))
+
+    if not start or not end:
+        return jsonify({"error": "Missing start or end time"}), 400
+
+    event = {
+        "summary": data.get("title", "Untitled Event"),
+        "description": data.get("description", ""),
+        "start": {"dateTime": start, "timeZone": tz_name},
+        "end": {"dateTime": end, "timeZone": tz_name}
+    }
+
+    created_event = service.events().insert(calendarId='primary', body=event).execute()
+    return jsonify(created_event)
 
 if __name__ == '__main__':
     with app.app_context():
