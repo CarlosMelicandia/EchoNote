@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         taskItem.classList.add('completed');
                         
                         // Update the button to show "Undo" instead of "Done"
-                        this.textContent = 'Undo';
+                        this.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
                         this.classList.remove('btn-done');
                         this.classList.add('btn-undo');
                         
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         taskItem.classList.remove('completed');
                         
                         // Update the button back to "Done"
-                        this.textContent = 'Done';
+                        this.innerHTML = '<i class="fa-solid fa-check"></i>';
                         this.classList.remove('btn-undo');
                         this.classList.add('btn-done');
                         

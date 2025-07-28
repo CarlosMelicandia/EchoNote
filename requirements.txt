@@ -5,3 +5,5 @@ pytest
 
 google-generativeai
 python-dotenv
+
+google-auth-oauthlib
