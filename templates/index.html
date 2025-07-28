@@ -9,23 +9,26 @@
         <div class="mic-button" id="btn-record">
             <div class="mic-icon"></div>
         </div>
-        <button id="btn-stop" disabled>Stop Recording</button>
-        <div class="recording-lines">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
-        </div>
-        <textarea id="transcript" placeholder="Transcript appears here..."></textarea>
-        <button id="btn-save">Save as Task</button>
+        <button class="btn-stop" id="btn-stop" disabled>Stop Recording</button>
+        <textarea placeholder="What would you like to accomplish today" 
+        id="transcript" 
+        name="transcript" 
+        rows="4" 
+        style="overflow: hidden; 
+        word-wrap: break-word; 
+        resize: none; 
+        height: 320px;"></textarea>  
+        <button class="btn-save" id="btn-save">Save</button>
     </div>
-    
     <div class="tasks-panel">
         <h2>Tasks</h2>
         <div class="task-list">
             {% if tasks %}
                 {% for task in tasks %}
-                <div class="task-item {% if task.completed %}completed{% endif %}" data-task-id="{{ task.id }}">
+                <div class="task-item {% if task.completed %}completed{% endif %}" 
+                    data-task-id="{{ task.id }}" 
+                    data-raw="{{ task.raw_text }}">
+                    
                     <div class="task-content">
                         {{ task.name }}
                         {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
@@ -33,14 +36,15 @@
                     </div>
                     <div class="task-actions">
                         {% if not task.completed %}
-                        <button class="btn-done" data-task-id="{{ task.id }}">Done</button>
+                        <button class="btn-done" data-task-id="{{ task.id }}"><i class="fa-solid fa-check"></i></button>
                         {% else %}
-                        <button class="btn-undo" data-task-id="{{ task.id }}">Undo</button>
+                        <button class="btn-undo" data-task-id="{{ task.id }}"><i class="fa-solid fa-rotate-left"></i></button>
                         {% endif %}
-                        <button class="btn-edit" data-task-id="{{ task.id }}">Edit</button>
-                        <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
+                        <button class="btn-edit" data-task-id="{{ task.id }}"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-delete" data-task-id="{{ task.id }}"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-sync" data-task-id="{{ task.id }}"><i class="fa-solid fa-calendar"></i></button>
+                        <button class="btn-sync-task" data-task-id="{{ task.id }}"><i class="fa-solid fa-list-check"></i></button>
                     </div>
-                    <div class="task-waveform"></div>
                 </div>
                 {% endfor %}
             {% else %}
@@ -53,136 +57,184 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const recordButton = document.getElementById('btn-record');
-        const stopButton = document.getElementById('btn-stop');
-        const saveButton = document.getElementById('btn-save');
-        const transcriptArea = document.getElementById('transcript');
-        
-        let recorder;
-        let stream;
-        
-        // Initialize media recording
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(
-            mediaStream => {
-                stream = mediaStream;
-                recorder = new MediaRecorder(stream);
-                let chunks = [];
+function convertTo24Hour(timeStr) {
+    if (!timeStr) return "";
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+    if (modifier === "PM" && hours < 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
 
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const blob = new Blob(chunks, { type: 'audio/webm'});
-                    chunks = [];
+function convertToDateInput(dateStr) {
+    if (!dateStr) return '';
+    const today = new Date();
+    let target = new Date();
+    if (dateStr.toLowerCase() === 'today') target = new Date();
+    else if (dateStr.toLowerCase() === 'tomorrow') target.setDate(today.getDate() + 1);
+    else {
+        const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        if (weekdays.includes(dateStr)) {
+            const targetDay = weekdays.indexOf(dateStr);
+            const diff = (targetDay - today.getDay() + 7) % 7 || 7;
+            target.setDate(today.getDate() + diff);
+        } else {
+            const parsed = new Date(dateStr + " " + today.getFullYear());
+            if (!isNaN(parsed)) target = parsed;
+        }
+    }
+    return target.toISOString().split('T')[0];
+}
 
-                    const form = new FormData();
-                    form.append('audio', blob, 'recording.webm')
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ Save button logic
+    const saveButton = document.getElementById('btn-save');
+    const transcriptArea = document.getElementById('transcript');
 
-                    try {
-                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                        const payload = await res.json();
-                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
-                        transcriptArea.value = payload.transcript;
-                    } catch (error) {
-                        console.error('Error transcribing audio:', error);
-                        transcriptArea.value = 'Error transcribing audio. Please try again.';
-                    }
-                };
-            }
-        ).catch(error => {
-            console.error('Error accessing microphone:', error);
-            alert('Could not access microphone. Please check permissions.');
-        });
+    saveButton.addEventListener('click', async function() {
+        const transcript = transcriptArea.value.trim();
+        if (!transcript) {
+            alert('Please record or type something before saving.');
+            return;
+        }
 
-        // Record button
-        recordButton.addEventListener('click', function() {
-            if (recorder && recorder.state === 'inactive') {
-                recorder.start();
-                recordButton.classList.add('recording');
-                stopButton.disabled = false;
-            }
-        });
+        try {
+            const response = await fetch('/api/save_task', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ transcript: transcript })
+            });
 
-        // Stop button
-        stopButton.addEventListener('click', function() {
-            if (recorder && recorder.state === 'recording') {
-                recorder.stop();
-                recordButton.classList.remove('recording');
-                stopButton.disabled = true;
-                
-                // Stop all tracks
-                if (stream) {
-                    stream.getTracks().forEach(track => {
-                        if (track.readyState === 'live') {
-                            track.stop();
-                        }
-                    });
-                }
-                
-                // Reinitialize for next recording
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(
-                    mediaStream => {
-                        stream = mediaStream;
-                        recorder = new MediaRecorder(stream);
-                        let chunks = [];
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to save task');
 
-                        recorder.ondataavailable = e => chunks.push(e.data);
-                        recorder.onstop = async () => {
-                            const blob = new Blob(chunks, { type: 'audio/webm'});
-                            chunks = [];
+            alert('Task saved ✅');
+            transcriptArea.value = '';
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('Error saving task: ' + err.message);
+        }
+    });
 
-                            const form = new FormData();
-                            form.append('audio', blob, 'recording.webm')
+    // ✅ Sync to Google Calendar
+    document.querySelectorAll('.btn-sync').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskItem = this.closest('.task-item');
+            const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
 
-                            try {
-                                const res = await fetch('/api/transcribe', { method: 'POST', body: form});
-                                const payload = await res.json();
-                                if (!res.ok) throw new Error(payload.error || "Transcription failed");
-                                transcriptArea.value = payload.transcript;
-                            } catch (error) {
-                                console.error('Error transcribing audio:', error);
-                                transcriptArea.value = 'Error transcribing audio. Please try again.';
-                            }
-                        };
-                    }
-                ).catch(console.error);
-            }
-        });
-
-        // Save button
-        saveButton.addEventListener('click', async function() {
-            const transcript = transcriptArea.value.trim();
-            
-            if (!transcript) {
-                alert('Please record something first.');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/save_task', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        transcript: transcript
-                    })
-                });
-                
-                if (response.ok) {
-                    // Clear the transcript area
-                    transcriptArea.value = '';
-                    
-                    // Refresh the page to show the new task
-                    window.location.reload();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to save task');
-                }
-            } catch (error) {
-                console.error('Error saving task:', error);
-                alert('Error saving task: ' + error.message);
-            }
+            fetch('/api/prefill_gcalen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: taskContent })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const date = convertToDateInput(data.start_date || data.due);
+                document.getElementById('popup-title').value = data.text || taskContent;
+                document.getElementById('popup-description').value = '';
+                document.getElementById('popup-start-date').value = date;
+                document.getElementById('popup-end-date').value = date;
+                document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
+                document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
+                document.getElementById('confirmation-popup').style.display = 'block';
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to parse task for calendar.");
+            });
         });
     });
+
+    // ✅ Sync to Google Tasks
+    document.querySelectorAll('.btn-sync-task').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskItem = this.closest('.task-item');
+            const taskContent = taskItem.querySelector('.task-content').innerText;
+
+            fetch('/api/google_task_create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    title: taskContent,
+                    due_date: null
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Task added to Google Tasks ✅");
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to add to Google Tasks");
+            });
+        });
+    });
+
+    // ✅ Handle confirm form submit for Calendar
+    document.getElementById('confirm-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const title = document.getElementById('popup-title').value;
+        const description = document.getElementById('popup-description').value;
+        const startDate = document.getElementById('popup-start-date').value;
+        const endDate = document.getElementById('popup-end-date').value;
+        const startTime = document.getElementById('popup-start-time').value;
+        const endTime = document.getElementById('popup-end-time').value;
+
+        const startDateTime = `${startDate}T${startTime}:00`;
+        const endDateTime = `${endDate}T${endTime}:00`;
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        fetch('/api/google_event_create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                start: startDateTime,
+                end: endDateTime,
+                timezone: tz
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert("Event added to Google Calendar ✅");
+            document.getElementById('confirmation-popup').style.display = 'none';
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Failed to add event to Google Calendar");
+        });
+    });
+
+    document.getElementById('cancel-btn').addEventListener('click', function() {
+        document.getElementById('confirmation-popup').style.display = 'none';
+    });
+});
 </script>
+
+<!-- ✅ Popup for Events -->
+<div id="confirmation-popup" style="display:none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Event</h3>
+    <form id="confirm-form">
+      <label for="popup-title">Title:</label>
+      <input type="text" id="popup-title" required />
+      <label for="popup-description">Description:</label>
+      <textarea id="popup-description"></textarea>
+      <label for="popup-start-date">Start Date:</label>
+      <input type="date" id="popup-start-date" required />
+      <label for="popup-start-time">Start Time:</label>
+      <input type="time" id="popup-start-time" required />
+      <label for="popup-end-date">End Date:</label>
+      <input type="date" id="popup-end-date" required />
+      <label for="popup-end-time">End Time:</label>
+      <input type="time" id="popup-end-time" required />
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}

@@ -6,3 +6,4 @@ pytest
 google-generativeai
 python-dotenv
 click
+google-auth-oauthlib
