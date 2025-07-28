@@ -87,7 +87,37 @@ function convertToDateInput(dateStr) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // ✅ Add Event button logic
+    // ✅ Save button logic
+    const saveButton = document.getElementById('btn-save');
+    const transcriptArea = document.getElementById('transcript');
+
+    saveButton.addEventListener('click', async function() {
+        const transcript = transcriptArea.value.trim();
+        if (!transcript) {
+            alert('Please record or type something before saving.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/save_task', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ transcript: transcript })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to save task');
+
+            alert('Task saved ✅');
+            transcriptArea.value = '';
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert('Error saving task: ' + err.message);
+        }
+    });
+
+    // ✅ Sync to Google Calendar
     document.querySelectorAll('.btn-sync').forEach(button => {
         button.addEventListener('click', function () {
             const taskItem = this.closest('.task-item');
@@ -116,7 +146,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ✅ Handle confirm form submit
+    // ✅ Sync to Google Tasks
+    document.querySelectorAll('.btn-sync-task').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskItem = this.closest('.task-item');
+            const taskContent = taskItem.querySelector('.task-content').innerText;
+
+            fetch('/api/google_task_create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    title: taskContent,
+                    due_date: null
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Task added to Google Tasks ✅");
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to add to Google Tasks");
+            });
+        });
+    });
+
+    // ✅ Handle confirm form submit for Calendar
     document.getElementById('confirm-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const title = document.getElementById('popup-title').value;
