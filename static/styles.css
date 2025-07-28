@@ -491,7 +491,7 @@
     margin-bottom: 10px;
 }
 
-.btn-edit, .btn-delete, .btn-done, .btn-undo, .btn-sync{
+.btn-edit, .btn-delete, .btn-done, .btn-undo, .btn-sync, .btn-sync-task{
     height: 36px;
     font-size: 14px;
     padding: 0 12px;
@@ -513,7 +513,12 @@
 }
 
 .btn-sync {
-  background-color: #ff8dc8;
+  background-color: #5BA2FF;
+  color: white;
+}
+
+.btn-sync-task{
+  background-color: #89D1F8;
   color: white;
 }
 

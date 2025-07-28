@@ -161,6 +161,7 @@ def delete_task_route(task_id):
     else:
         return jsonify(error='Task not found'), 404
 
+# Prefill task function
 @app.route("/api/parse_task", methods=["POST"])
 def parse_task():
     data = request.get_json()

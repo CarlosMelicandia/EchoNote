@@ -33,14 +33,30 @@
                     </div>
                     <div class="task-actions">
                         {% if not task.completed %}
-                        <button class="btn-done" data-task-id="{{ task.id }}">Done</button>
-                        {% else %}
-                        <button class="btn-undo" data-task-id="{{ task.id }}">Undo</button>
-                        {% endif %}
-                        <button class="btn-edit" data-task-id="{{ task.id }}">Edit</button>
-                        <button class="btn-delete" data-task-id="{{ task.id }}">Delete</button>
-                        <button class="btn-sync" data-task-id="{{ task.id }}">Sync to Google Calendar</button>
-                        <button class="btn-sync-task" data-task-id="{{ task.id }}">Sync to Google Task</button>
+                        <button class="btn-done" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-check"></i>
+                            </button>
+                            
+                            {% else %}
+                            <button class="btn-undo" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            {% endif %}
+                            
+                            <button class="btn-edit" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-pen"></i>
+                            </button>
+                            
+                            <button class="btn-delete" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <button class="btn-sync" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-calendar"></i>
+                            </button>
+                            <button class="btn-sync-task" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-list-check"></i>
+                            </button>
+                          
                     </div>
                     <div class="task-waveform"></div>
                 </div>
