@@ -329,7 +329,7 @@ def authorize():
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token"
             }
-        },
+        }
         scopes=SCOPES,
         redirect_uri=url_for("oauth2callback", _external=True)
     )

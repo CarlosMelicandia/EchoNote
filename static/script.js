@@ -11,6 +11,7 @@ const defaultTheme = {
   borderColor: '#444'
 };
 
+
 // apply theme object to CSS variables
 function applyTheme(theme) {
   const root = document.documentElement;
