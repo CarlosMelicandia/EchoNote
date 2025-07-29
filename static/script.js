@@ -45,52 +45,8 @@ async function loadTheme() {
     if (saved) theme = JSON.parse(saved);
   }
 
-  applyTheme(theme);
+  applyTheme(theme || defaultTheme);
 }
-document.addEventListener('DOMContentLoaded', async function() {
-    const defaultTheme = {
-        bgPrimary:   '#212121',
-        bgSecondary: '#303030',
-        textPrimary: '#ececf1',
-        textSecondary:'#ffffff',
-        accent:      '#FCFCFD',
-        buttonText:  '#36395A',
-        borderColor: '#444'
-    };
-
-    //helper to apply theme object to CSS variables
-    function applyTheme(theme) {
-    for (const [key, value] of Object.entries(theme)) {
-      const cssVar = '--' + key.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
-      document.documentElement.style.setProperty(cssVar, value);
-    }
-  }
-    //try server if logged in
-    let theme = null;
-    if (window.isAuthenticated) {
-        try {
-            const resp = await fetch('/api/get_theme');
-            if (resp.ok) {
-                theme = await resp.json();
-            }
-        } catch (err) {
-            console.warn('Could not fetch theme from server, falling back to localStorage', err);
-        }
-    }
-
-    //if no server theme, try localStorage
-    if (!theme) {
-        try {
-            const saved = localStorage.getItem('echoNoteTheme');
-            if (saved) theme = JSON.parse(saved);       
-        } catch (err) {
-            console.warn('Could not parse localStorage theme, using default', err);
-        }
-    }
-    //if no theme found, use default
-    applyTheme(theme || defaultTheme);
-});
-
 
 // Nav‐link highlighting
 function highlightNav() {
@@ -100,10 +56,58 @@ function highlightNav() {
   });
 }
 
+//audio recording functionality
+let mediaRecorder, audioChunks = [];
+
+function initRecording() {
+  const btnRecord = document.getElementById('btn-record');
+  const btnStop   = document.getElementById('btn-stop');
+  const transcriptArea = document.getElementById('transcript');
+
+  btnRecord.addEventListener('click', async () => {
+    // ask for mic
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.addEventListener('dataavailable', e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    });
+    mediaRecorder.addEventListener('stop', async () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const form = new FormData();
+      form.append('audio', blob, 'recording.webm');
+
+      try {
+        const resp = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: form
+        });
+        if (!resp.ok) throw new Error('Transcription failed ' + resp.status);
+        const { transcript } = await resp.json();
+        transcriptArea.value = transcript;
+      } catch (err) {
+        console.error(err);
+        alert('Transcription error: ' + err.message);
+      }
+    });
+
+    mediaRecorder.start();
+    btnRecord.disabled = true;
+    btnStop.disabled = false;
+  });
+
+  btnStop.addEventListener('click', () => {
+    mediaRecorder.stop();
+    btnStop.disabled = true;
+    btnRecord.disabled = false;
+  });
+}
+
 
 // once the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-loadTheme();
+    loadTheme();
     highlightNav();
   
     
@@ -143,6 +147,9 @@ loadTheme();
                         </div>
                     </div>
                 `;
+                
+    
+
                 
                 // Save button
                 taskItem.querySelector('.btn-save').addEventListener('click', async function() {

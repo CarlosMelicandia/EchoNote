@@ -19,7 +19,9 @@ from zoneinfo import ZoneInfo  # Python 3.9+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "change this")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///echo_note.db'
+base_dir = os.path.abspath(os.path.dirname(__file__))
+db_path  = os.path.join(base_dir, 'echo_note.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 print(app.config['SQLALCHEMY_DATABASE_URI'])
 
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -34,7 +36,8 @@ db.init_app(app)
 def init_db_command():
     uri = app.config['SQLALCHEMY_DATABASE_URI']
     click.echo(f"Using database: {uri}")
-    db.create_all()
+    with app.app_context():
+        db.create_all()
     click.echo("Initialized the database")
 
 #set up login manager
@@ -232,11 +235,14 @@ def save_task():
             due_date = task_data.get("due")
             print(f"Trying to save task: {task_text} (Due: {due_date})")
             if task_text:
-                create_task(task_text, due_date, raw_text=transcript)
+                create_task(user_id=current_user.id, name=task_text, due_date=due_date)
                 count += 1
         db.session.commit()
         print(f"Saved {count} tasks to database")
         return jsonify(message=f'{count} tasks saved'), 200
+    except Exception as e:
+        print(f"Error saving tasks: {e}")
+        return jsonify(error="Failed to save tasks"), 500
     
 # Update task route
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
