@@ -320,7 +320,6 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
 @app.route("/authorize")
 def authorize():
     session.clear()
-
     # ✅ Debug: See what redirect URL is being generated
     generated_redirect = url_for("oauth2callback", _external=True)
     print("DEBUG: Generated redirect URI ->", generated_redirect)
