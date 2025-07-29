@@ -68,6 +68,63 @@
         </div>
     </div>
 </div>
+
+<div id="confirmation-popup" style="display: none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Event</h3>
+    <form id="confirm-form">
+      <label for="popup-title">Title:</label>
+      <input type="text" id="popup-title" name="title" required />
+    
+      <label for="popup-description">Description:</label>
+      <textarea id="popup-description" name="description"></textarea>
+
+      <label for="popup-start-date">Start Date:</label>
+      <input type="date" id="popup-start-date" name="start_date" required />
+
+      <label for="popup-start-time">Start Time:</label>
+      <input type="time" id="popup-start-time" name="start_time" required />
+
+      <label for="popup-end-date">End Date:</label>
+      <input type="date" id="popup-end-date" name="end_date" required />
+
+      <label for="popup-end-time">End Time:</label>
+      <input type="time" id="popup-end-time" name="end_time" required />
+
+      <label for="popup-recurrence">Recurrence:</label>
+      <select id="popup-recurrence" name="recurrence">
+        <option value="">None</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Weekdays</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="task-popup" style="display: none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Task</h3>
+    <form id="task-form">
+      <label for="task-title">Title:</label>
+      <input type="text" id="task-title" name="title" required />
+
+      <label for="task-due-date">Due Date:</label>
+      <input type="date" id="task-due-date" name="due_date" />
+
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-task-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -83,8 +140,7 @@
 
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
-    //converts date strings like "today", "tomorrow", or weekdays to a date input format
-    //wouldnt work if its says 7pm today. now this function strips the time and returns the date
+    
     function convertToDateInput(dateStr) {
         if (!dateStr) return '';
 
@@ -150,28 +206,41 @@
             alert('Could not access microphone. Please check permissions.');
         });
         
-        //The popup for g-events
+        // The popup for g-events
         document.querySelectorAll('.btn-sync').forEach(button => {
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
-                const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
+                const taskId = taskItem.dataset.taskId;
+                const taskContent = taskItem.querySelector('.task-content').innerText;
+                
+                // Extract clean task name (without due date or completion status)
+                let cleanTaskContent = taskContent;
+                if (cleanTaskContent.includes('—')) {
+                    cleanTaskContent = cleanTaskContent.split('—')[0].trim();
+                }
+                if (cleanTaskContent.includes('(Done)')) {
+                    cleanTaskContent = cleanTaskContent.replace('(Done)', '').trim();
+                }
 
-                //send to genai to extract structured info
+                // Send to genai to extract structured info
                 fetch('/api/prefill_gcalen', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: taskContent })
+                    body: JSON.stringify({ 
+                        task_id: taskId,
+                        text: cleanTaskContent 
+                    })
                 })
                 .then(res => res.json())
                 .then(data => {
                     const date = convertToDateInput(data.start_date || data.due);
-                    //fill the popup using parsed task
-                    document.getElementById('popup-title').value = data.text || taskContent;
+                    // Fill the popup using parsed task
+                    document.getElementById('popup-title').value = data.text || cleanTaskContent;
                     document.getElementById('popup-description').value = '';
                     document.getElementById('popup-start-date').value = date;
                     document.getElementById('popup-end-date').value = date;
-                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
-                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
+                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time) || '09:00';
+                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time) || '10:00';
                     document.getElementById('popup-recurrence').value = data.repeat || '';
                     
                     document.getElementById('confirmation-popup').style.display = 'block';
@@ -183,22 +252,35 @@
             });
         });
 
-        //popup for the g-tasks
+        // Popup for the g-tasks
         document.querySelectorAll('.btn-sync-task').forEach(button => {
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
+                const taskId = taskItem.dataset.taskId;
                 const taskContent = taskItem.querySelector('.task-content').innerText;
                 
-                //send to genai to extract structured info
+                // Extract clean task name (without due date or completion status)
+                let cleanTaskContent = taskContent;
+                if (cleanTaskContent.includes('—')) {
+                    cleanTaskContent = cleanTaskContent.split('—')[0].trim();
+                }
+                if (cleanTaskContent.includes('(Done)')) {
+                    cleanTaskContent = cleanTaskContent.replace('(Done)', '').trim();
+                }
+                
+                // Send to genai to extract structured info
                 fetch('/api/prefill_gtask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: taskContent })
+                    body: JSON.stringify({ 
+                        task_id: taskId,
+                        text: cleanTaskContent 
+                    })
                 })
                 .then(res => res.json())
                 .then(data => {
-                    //fill the popup using parsed task
-                    document.getElementById('task-title').value = data.text || taskContent;
+                    // Fill the popup using parsed task
+                    document.getElementById('task-title').value = data.text || cleanTaskContent;
                     const dueDate = data.due || data.start_date || '';
                     document.getElementById('task-due-date').value = convertToDateInput(dueDate);
                     document.getElementById('task-popup').style.display = 'block';
@@ -232,7 +314,52 @@
             });
         });
 
-        // Cancel button for task popup
+        // Handle Google Calendar event form submit
+        document.getElementById('confirm-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const title = document.getElementById('popup-title').value;
+            const description = document.getElementById('popup-description').value;
+            const startDate = document.getElementById('popup-start-date').value;
+            const startTime = document.getElementById('popup-start-time').value;
+            const endDate = document.getElementById('popup-end-date').value;
+            const endTime = document.getElementById('popup-end-time').value;
+            const recurrence = document.getElementById('popup-recurrence').value;
+            
+            // Combine date and time
+            const start = `${startDate}T${startTime}:00`;
+            const end = `${endDate}T${endTime}:00`;
+            
+            // Send to API
+            fetch('/api/google_event_create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    start: start,
+                    end: end,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    recurrence: recurrence
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Event added to Google Calendar ✅");
+                document.getElementById('confirmation-popup').style.display = 'none';
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Failed to add to Google Calendar");
+            });
+        });
+
+        // Cancel buttons for popups
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            document.getElementById('confirmation-popup').style.display = 'none';
+        });
+
         document.getElementById('cancel-task-btn').addEventListener('click', function() {
             document.getElementById('task-popup').style.display = 'none';
         });
@@ -328,122 +455,65 @@
             }
         });
     
-    // ✅ Handle undo button (mark task as incomplete)
-    document.querySelectorAll('.btn-undo').forEach(button => {
-        button.addEventListener('click', async function() {
-            const taskId = this.getAttribute('data-task-id');
-            
-            try {
-                const response = await fetch(`/api/tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        completed: false
-                    })
-                });
+        // Handle undo button (mark task as incomplete)
+        document.querySelectorAll('.btn-undo').forEach(button => {
+            button.addEventListener('click', async function() {
+                const taskId = this.getAttribute('data-task-id');
                 
-                if (response.ok) {
-                    // Refresh the page to show updated task
-                    window.location.reload();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to mark task as incomplete');
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            completed: false
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Refresh the page to show updated task
+                        window.location.reload();
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to mark task as incomplete');
+                    }
+                } catch (error) {
+                    console.error('Error marking task as incomplete:', error);
+                    alert('Error marking task as incomplete: ' + error.message);
                 }
-            } catch (error) {
-                console.error('Error marking task as incomplete:', error);
-                alert('Error marking task as incomplete: ' + error.message);
-            }
+            });
         });
-    });
 
-    // ✅ Handle done button (mark task as complete)
-    document.querySelectorAll('.btn-done').forEach(button => {
-        button.addEventListener('click', async function() {
-            const taskId = this.getAttribute('data-task-id');
-            
-            try {
-                const response = await fetch(`/api/tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        completed: true
-                    })
-                });
+        // Handle done button (mark task as complete)
+        document.querySelectorAll('.btn-done').forEach(button => {
+            button.addEventListener('click', async function() {
+                const taskId = this.getAttribute('data-task-id');
                 
-                if (response.ok) {
-                    // Refresh the page to show updated task
-                    window.location.reload();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to mark task as completed');
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            completed: true
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Refresh the page to show updated task
+                        window.location.reload();
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to mark task as completed');
+                    }
+                } catch (error) {
+                    console.error('Error marking task as completed:', error);
+                    alert('Error marking task as completed: ' + error.message);
                 }
-            } catch (error) {
-                console.error('Error marking task as completed:', error);
-                alert('Error marking task as completed: ' + error.message);
-            }
+            });
         });
-    });
-});   
-
+    });   
 </script>
-<div id="confirmation-popup" style="display: none;" class="popup-overlay">
-  <div class="popup-box">
-    <h3>Confirm Event</h3>
-    <form id="confirm-form">
-      <label for="popup-title">Title:</label>
-      <input type="text" id="popup-title" name="title" required />
-    
-      <label for="popup-description">Description:</label>
-      <textarea id="popup-description" name="description"></textarea>
-
-      <label for="popup-start-date">Start Date:</label>
-      <input type="date" id="popup-start-date" name="start_date" required />
-
-      <label for="popup-start-time">Start Time:</label>
-      <input type="time" id="popup-start-time" name="start_time" required />
-
-      <label for="popup-end-date">End Date:</label>
-      <input type="date" id="popup-end-date" name="end_date" required />
-
-      <label for="popup-end-time">End Time:</label>
-      <input type="time" id="popup-end-time" name="end_time" required />
-
-      <label for="popup-recurrence">Recurrence:</label>
-      <select id="popup-recurrence" name="recurrence">
-        <option value="">None</option>
-        <option value="daily">Daily</option>
-        <option value="weekdays">Weekdays</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-      </select>
-
-      <div class="form-buttons">
-        <button type="submit">Confirm & Add</button>
-        <button type="button" id="cancel-btn">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div id="task-popup" style="display: none;" class="popup-overlay">
-  <div class="popup-box">
-    <h3>Confirm Task</h3>
-    <form id="task-form">
-      <label for="task-title">Title:</label>
-      <input type="text" id="task-title" name="title" required />
-
-      <label for="task-due-date">Due Date:</label>
-      <input type="date" id="task-due-date" name="due_date" />
-
-      <div class="form-buttons">
-        <button type="submit">Confirm & Add</button>
-        <button type="button" id="cancel-task-btn">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
 {% endblock %}
