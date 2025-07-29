@@ -126,7 +126,7 @@
   
   button:hover {
     box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
-    transform: translateY(-2px);
+    filter: brightness(0.7);
   }
   
   button:active {
@@ -485,10 +485,18 @@
     }
   }
 
-  .task-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+/* Hide task action buttons by default */
+.task-actions {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+/* Show task action buttons on hover */
+.task-item:hover .task-actions {
+  max-height: 50px; /* Set this to a value larger than your buttons' height */
+  opacity: 1;
 }
 
 .btn-edit, .btn-delete, .btn-done, .btn-undo, .btn-sync, .btn-sync-task{
