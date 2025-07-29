@@ -131,6 +131,9 @@ def save_task():
         for task_data in parsed_tasks:
             task_text = task_data.get("text")
             due_date = task_data.get("due")
+            
+            if due_date and isinstance(due_date, str):
+                due_date = due_date.strip().capitalize()
             print(f"Trying to save task: {task_text} (Due: {due_date})")
             if task_text:
                 create_task(task_text, due_date, raw_text=transcript)
