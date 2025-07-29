@@ -320,52 +320,83 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
 @app.route("/authorize")
 def authorize():
     session.clear()
-    # ✅ Debug: See what redirect URL is being generated
-    generated_redirect = url_for("oauth2callback", _external=True)
-    print("DEBUG: Generated redirect URI ->", generated_redirect)
-
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "redirect_uris": ["http://127.0.0.1:5000/oauth2callback"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token"
-            }
-        },
-        scopes=SCOPES,
-        redirect_uri=generated_redirect  # use what was generated
-    )
-    auth_url, _ = flow.authorization_url(prompt="consent")
-    return redirect(auth_url)
+    
+    # Get the actual host being used by the request
+    host_url = request.host_url.rstrip('/')
+    redirect_uri = f"{host_url}/oauth2callback"
+    
+    print(f"DEBUG: Using host URL: {host_url}")
+    print(f"DEBUG: Generated redirect URI: {redirect_uri}")
+    
+    # Check if we have credentials
+    if not CLIENT_ID or not CLIENT_SECRET:
+        flash("Google API credentials not configured", "error")
+        return redirect(url_for("index"))
+    
+    try:
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": CLIENT_ID,
+                    "client_secret": CLIENT_SECRET,
+                    "redirect_uris": [redirect_uri],  # Use dynamic URI
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token"
+                }
+            },
+            scopes=SCOPES,
+            redirect_uri=redirect_uri
+        )
+        auth_url, _ = flow.authorization_url(prompt="consent")
+        return redirect(auth_url)
+    except Exception as e:
+        print(f"Error in authorize route: {str(e)}")
+        flash(f"Authorization failed: {str(e)}", "error")
+        return redirect(url_for("index"))
 
 @app.route("/oauth2callback")
 def oauth2callback():
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "redirect_uris": ["http://127.0.0.1:5000/oauth2callback"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token"
-            }
-        },
-        scopes=SCOPES,
-        redirect_uri=url_for("oauth2callback", _external=True)
-    )
-    flow.fetch_token(authorization_response=request.url)
-    creds = flow.credentials
-    session["credentials"] = {
-        "token": creds.token,
-        "refresh_token": creds.refresh_token,
-        "token_uri": creds.token_uri,
-        "client_id": creds.client_id,
-        "client_secret": creds.client_secret,
-        "scopes": creds.scopes
-    }
-    return redirect(url_for("index"))
+    # Check for error parameter
+    if 'error' in request.args:
+        error = request.args.get('error')
+        print(f"OAuth error: {error}")
+        flash(f"Authorization failed: {error}", "error")
+        return redirect(url_for("index"))
+    
+    # Get the same redirect URI as in the authorize route
+    host_url = request.host_url.rstrip('/')
+    redirect_uri = f"{host_url}/oauth2callback"
+    
+    try:
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": CLIENT_ID,
+                    "client_secret": CLIENT_SECRET,
+                    "redirect_uris": [redirect_uri],  # Use dynamic URI
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token"
+                }
+            },
+            scopes=SCOPES,
+            redirect_uri=redirect_uri
+        )
+        flow.fetch_token(authorization_response=request.url)
+        creds = flow.credentials
+        session["credentials"] = {
+            "token": creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri": creds.token_uri,
+            "client_id": creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes": creds.scopes
+        }
+        flash("Successfully connected to Google", "success")
+        return redirect(url_for("index"))
+    except Exception as e:
+        print(f"OAuth callback error: {str(e)}")
+        flash(f"Authorization failed: {str(e)}", "error")
+        return redirect(url_for("index"))
 
 def get_tasks_service():
     if "credentials" not in session:
