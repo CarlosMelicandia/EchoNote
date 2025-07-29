@@ -11,6 +11,8 @@ Each task must be formatted as:
 - "repeat": how often it repeats: one of ["none", "daily", "weekdays", "weekly", "monthly"] — or null if not mentioned
 - "due": if it’s a one-time deadline (e.g., “Friday” or “tomorrow”), otherwise null
 
+ALSO if there is a name of a day on the week, capitalize the first letter of the day (Ex. tuesday becomes Tuesday)
+
 Respond only with a JSON array. No explanations, no markdown, no headings.
 
 Examples:
