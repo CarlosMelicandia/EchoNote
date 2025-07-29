@@ -181,6 +181,66 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cancel-btn').addEventListener('click', function() {
         document.getElementById('confirmation-popup').style.display = 'none';
     });
+
+    // ✅ Handle undo button (mark task as incomplete)
+    document.querySelectorAll('.btn-undo').forEach(button => {
+        button.addEventListener('click', async function() {
+            const taskId = this.getAttribute('data-task-id');
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        completed: false
+                    })
+                });
+                
+                if (response.ok) {
+                    // Refresh the page to show updated task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to mark task as incomplete');
+                }
+            } catch (error) {
+                console.error('Error marking task as incomplete:', error);
+                alert('Error marking task as incomplete: ' + error.message);
+            }
+        });
+    });
+
+    // ✅ Handle done button (mark task as complete)
+    document.querySelectorAll('.btn-done').forEach(button => {
+        button.addEventListener('click', async function() {
+            const taskId = this.getAttribute('data-task-id');
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        completed: true
+                    })
+                });
+                
+                if (response.ok) {
+                    // Refresh the page to show updated task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to mark task as completed');
+                }
+            } catch (error) {
+                console.error('Error marking task as completed:', error);
+                alert('Error marking task as completed: ' + error.message);
+            }
+        });
+    });
 });
 </script>
 
