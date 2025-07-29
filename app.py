@@ -160,7 +160,7 @@ def get_theme():
         return jsonify(user_theme), 200
     default = {
         "bgPrimary": "#212121", "bgSecondary": "#303030", "textPrimary": "#ececf1",
-        "accent": "#FCFCD", "textSecondary": "#ffffff", "buttonText": "#36395A", "borderColor": "#444"
+        "accent": "#FCFCD", "textSecondary": "#ffffff", "buttonText": "#ffffff", "borderColor": "#444"
     }
     return jsonify(default), 200
 
@@ -329,7 +329,7 @@ def authorize():
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token"
             }
-        }
+        },
         scopes=SCOPES,
         redirect_uri=url_for("oauth2callback", _external=True)
     )
