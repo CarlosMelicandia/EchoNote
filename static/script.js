@@ -1,61 +1,198 @@
 // Common functionality across pages
-document.addEventListener('DOMContentLoaded', function() {
-    // Load theme from localStorage with robust error handling
+
+// default dark theme
+const defaultTheme = {
+  bgPrimary:   '#212121',
+  bgSecondary: '#303030',
+  textPrimary: '#ececf1',
+  textSecondary:'#ffffff',
+  accent:      '#FCFCFD',
+  buttonText:  '#36395A',
+  borderColor: '#444'
+};
+
+// apply theme object to CSS variables
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty('--bg-primary',   theme.bgPrimary);
+  root.style.setProperty('--bg-secondary', theme.bgSecondary);
+  root.style.setProperty('--text-primary', theme.textPrimary);
+  root.style.setProperty('--text-secondary', theme.textSecondary);
+  root.style.setProperty('--accent',       theme.accent);
+  root.style.setProperty('--button-text',  theme.buttonText);
+  root.style.setProperty('--border-color', theme.borderColor);
+}
+
+// load the theme - try server first, then localStorage, then default
+async function loadTheme() {
+  let theme = defaultTheme;
+
+  if (window.currentUser) {
     try {
-        const savedThemeJSON = localStorage.getItem('echoNoteTheme');
-        console.log('Raw theme data from localStorage:', savedThemeJSON);
-        
-        if (savedThemeJSON && savedThemeJSON !== 'undefined') {
-            const savedTheme = JSON.parse(savedThemeJSON);
-            console.log('Parsed theme data:', savedTheme);
-            
-            // Apply theme only if we have valid data
-            if (savedTheme && typeof savedTheme === 'object') {
-                // Apply each property with fallbacks
-                document.documentElement.style.setProperty('--bg-primary', savedTheme.bgPrimary || '#212121');
-                document.documentElement.style.setProperty('--bg-secondary', savedTheme.bgSecondary || '#303030');
-                document.documentElement.style.setProperty('--text-primary', savedTheme.textPrimary || '#ececf1');
-                document.documentElement.style.setProperty('--text-secondary', savedTheme.textSecondary || '#ffffff');
-                document.documentElement.style.setProperty('--accent', savedTheme.accent || '#FCFCFD');
-                document.documentElement.style.setProperty('--button-text', savedTheme.buttonText || '#36395A');
-                document.documentElement.style.setProperty('--border-color', savedTheme.borderColor || '#444');
-                
-                console.log('Theme applied successfully');
-            }
-        } else {
-            console.log('No saved theme found in localStorage');
-        }
-    } catch (error) {
-        console.error('Error loading theme:', error);
-    }
-
-    // Add active class to current nav item
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('nav a');
-    
-    navLinks.forEach(link => {
-      if (link.getAttribute('href') === currentPath) {
-        link.classList.add('active');
+      const resp = await fetch('/api/get_theme');
+      if (resp.ok) {
+        theme = await resp.json();
+      } else {
+        throw new Error('Server returned ' + resp.status);
       }
-    });
-
-    // Fetch and render all items (tasks and events)
-    async function fetchAllItems() {
-      const response = await fetch('/api/all_items');
-      const items = await response.json();
-
-      items.forEach(item => {
-        if (item.type === 'task') {
-          // render as task
-          renderTask(item);
-        } else if (item.type === 'event') {
-          // render as calendar event
-          renderEvent(item);
-        }
-      });
+    } catch (err) {
+      console.warn('Could not fetch theme from server, falling back to localStorage', err);
+      const saved = localStorage.getItem('echoNoteTheme');
+      if (saved) theme = JSON.parse(saved);
     }
+  } else {
+    const saved = localStorage.getItem('echoNoteTheme');
+    if (saved) theme = JSON.parse(saved);
+  }
+
+  applyTheme(theme || defaultTheme);
+}
+
+// Nav‐link highlighting
+function highlightNav() {
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('nav a').forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === currentPath);
+  });
+}
+
+// once the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+
+//start recording
+    const recordButton = document.getElementById('btn-record');
+    const stopButton = document.getElementById('btn-stop');
+    const saveButton = document.getElementById('btn-save');
+    const transcriptArea = document.getElementById('transcript');
+        
+    let recorder;
+    let stream;
+
+// Initialize media recording
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(
+        mediaStream => {
+            stream = mediaStream;
+            recorder = new MediaRecorder(stream);
+            let chunks = [];
+
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm'});
+                chunks = [];
+
+                const form = new FormData();
+                form.append('audio', blob, 'recording.webm')
+
+                try {
+                    const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                    const payload = await res.json();
+                    if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                    transcriptArea.value = payload.transcript;
+                } catch (error) {
+                    console.error('Error transcribing audio:', error);
+                    transcriptArea.value = 'Error transcribing audio. Please try again.';
+                }
+            };
+        }
+        ).catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        });
+
+        // Record button
+        recordButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'inactive') {
+                recorder.start();
+                recordButton.classList.add('recording');
+                stopButton.disabled = false;
+            }
+        });
+
+        // Stop button
+        stopButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'recording') {
+                recorder.stop();
+                recordButton.classList.remove('recording');
+                stopButton.disabled = true;
+                
+                // Stop all tracks
+                if (stream) {
+                    stream.getTracks().forEach(track => {
+                        if (track.readyState === 'live') {
+                            track.stop();
+                        }
+                    });
+                }
+                
+        // Reinitialize for next recording
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(
+            mediaStream => {
+                stream = mediaStream;
+                recorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm'});
+                    chunks = [];
+
+                    const form = new FormData();
+                    form.append('audio', blob, 'recording.webm')
+
+                    try {
+                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                        const payload = await res.json();
+                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                        transcriptArea.value = payload.transcript;
+                        } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptArea.value = 'Error transcribing audio. Please try again.';
+                    }
+                    };
+                }
+            ).catch(console.error);
+        }
+    });  
+    
+    // Save button
+        saveButton.addEventListener('click', async function() {
+            const transcript = transcriptArea.value.trim();
+            
+            if (!transcript) {
+                alert('Please record something first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/save_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcript
+                    })
+                });
+                
+                if (response.ok) {
+                    // Clear the transcript area
+                    transcriptArea.value = '';
+                    
+                    // Refresh the page to show the new task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save task');
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task: ' + error.message);
+            }
+        });
+
+    loadTheme();
+    highlightNav();
   
-    // Initialize any other common UI elements
     
     // Handle keyboard shortcuts that should work across the app
     document.addEventListener('keydown', function(e) {
@@ -93,6 +230,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 `;
+                
+    
+
                 
                 // Save button
                 taskItem.querySelector('.btn-save').addEventListener('click', async function() {
@@ -194,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         taskItem.classList.add('completed');
                         
                         // Update the button to show "Undo" instead of "Done"
-                        this.textContent = 'Undo';
+                        this.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
                         this.classList.remove('btn-done');
                         this.classList.add('btn-undo');
                         
@@ -236,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         taskItem.classList.remove('completed');
                         
                         // Update the button back to "Done"
-                        this.textContent = 'Done';
+                        this.innerHTML = '<i class="fa-solid fa-check"></i>';
                         this.classList.remove('btn-undo');
                         this.classList.add('btn-done');
                         
@@ -293,6 +433,4 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-
 });
-

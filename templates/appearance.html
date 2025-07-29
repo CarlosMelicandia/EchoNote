@@ -3,281 +3,187 @@
 {% block title %}EchoNote - Appearance{% endblock %}
 
 {% block content %}
-<div class="appearance-container">
-    <h2>Customize Appearance</h2>
-    
-    <div class="appearance-grid">
+  {% if current_user.is_authenticated %}
+    <div class="appearance-container">
+      <h2>Customize Appearance</h2>
+      <div class="appearance-grid">
         <div class="appearance-card">
-            <h3>Theme Colors</h3>
-            
-            <div class="color-option">
-                <label for="bg-primary">Background Primary:</label>
-                <input type="color" id="bg-primary" class="color-picker" value="#212121">
-            </div>
-            
-            <div class="color-option">
-                <label for="bg-secondary">Background Secondary:</label>
-                <input type="color" id="bg-secondary" class="color-picker" value="#303030">
-            </div>
-            
-            <div class="color-option">
-                <label for="text-primary">Text Primary:</label>
-                <input type="color" id="text-primary" class="color-picker" value="#ececf1">
-            </div>
-            
-            <div class="color-option">
-                <label for="text-secondary">Text Secondary:</label>
-                <input type="color" id="text-secondary" class="color-picker" value="#ffffff">
-            </div>
-            
-            <div class="color-option">
-                <label for="accent">Accent Color:</label>
-                <input type="color" id="accent" class="color-picker" value="#FCFCFD">
-            </div>
-            
-            <div class="color-option">
-                <label for="button-text">Button Text:</label>
-                <input type="color" id="button-text" class="color-picker" value="#36395A">
-            </div>
-            
-            <div class="color-option">
-                <label for="border-color">Border Color:</label>
-                <input type="color" id="border-color" class="color-picker" value="#444444">
-            </div>
+          <h3>Theme Colors</h3>
+          <div class="color-option">
+            <label for="bg-primary">Background Primary:</label>
+            <input type="color" id="bg-primary" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="bg-secondary">Background Secondary:</label>
+            <input type="color" id="bg-secondary" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="text-primary">Text Primary:</label>
+            <input type="color" id="text-primary" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="text-secondary">Text Secondary:</label>
+            <input type="color" id="text-secondary" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="accent">Accent Color:</label>
+            <input type="color" id="accent" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="button-text">Button Text:</label>
+            <input type="color" id="button-text" class="color-picker">
+          </div>
+          <div class="color-option">
+            <label for="border-color">Border Color:</label>
+            <input type="color" id="border-color" class="color-picker">
+          </div>
         </div>
-        
         <div class="appearance-card">
-            <h3>Preset Themes</h3>
-            <div class="preset-themes">
-                <button class="preset-btn" data-theme="default">Default Dark</button>
-                <button class="preset-btn" data-theme="light">Light Mode</button>
-                <button class="preset-btn" data-theme="midnight">Midnight Blue</button>
-                <button class="preset-btn" data-theme="forest">Forest Green</button>
-                <button class="preset-btn" data-theme="sunset">Sunset Orange</button>
-                <button class="preset-btn" data-theme="high-contrast">High Contrast</button>
+          <h3>Preset Themes</h3>
+          <div class="preset-themes">
+            <button class="preset-btn" data-theme="default">Default Dark</button>
+            <button class="preset-btn" data-theme="light">Light Mode</button>
+            <button class="preset-btn" data-theme="midnight">Midnight Blue</button>
+            <button class="preset-btn" data-theme="forest">Forest Green</button>
+            <button class="preset-btn" data-theme="sunset">Sunset Orange</button>
+            <button class="preset-btn" data-theme="high-contrast">High Contrast</button>
+          </div>
+          <h3 class="preview-title">Preview</h3>
+          <div class="theme-preview">
+            <div class="preview-nav">Navigation</div>
+            <div class="preview-content">
+              <div class="preview-task">Sample Task 1</div>
+              <div class="preview-task">Sample Task 2</div>
+              <button class="preview-button">Button</button>
             </div>
-            
-            <h3 class="preview-title">Preview</h3>
-            <div class="theme-preview">
-                <div class="preview-nav">Navigation</div>
-                <div class="preview-content">
-                    <div class="preview-task">Sample Task 1</div>
-                    <div class="preview-task">Sample Task 2</div>
-                    <button class="preview-button">Button</button>
-                </div>
-            </div>
+          </div>
         </div>
-    </div>
-    
-    <div class="action-buttons">
+      </div>
+      <div class="action-buttons">
         <button id="save-theme">Save Theme</button>
         <button id="reset-theme">Reset to Default</button>
+      </div>
     </div>
-</div>
+  {% else %}
+    <p>You must <a href="{{ url_for('login') }}">log in</a> to customize your theme.</p>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-         // Test localStorage functionality
-        try {
-            localStorage.setItem('testItem', 'working');
-            const testValue = localStorage.getItem('testItem');
-            console.log('localStorage test:', testValue === 'working' ? 'PASSED' : 'FAILED');
-            localStorage.removeItem('testItem');
-        } catch (error) {
-            console.error('localStorage test FAILED:', error);
-            alert('Warning: localStorage is not available. Theme preferences cannot be saved.');
-        }
-        // Default theme colors
-        const defaultTheme = {
-            bgPrimary: '#212121',
-            bgSecondary: '#303030',
-            textPrimary: '#ececf1',
-            textSecondary: '#ffffff',
-            accent: '#FCFCFD',
-            buttonText: '#36395A',
-            borderColor: '#444'
-        };
-        
-        // Theme presets
-        const presets = {
-            default: defaultTheme,
-            light: {
-                bgPrimary: '#f5f5f5',
-                bgSecondary: '#BDBDBD',
-                textPrimary: '#FFFFFF',
-                textSecondary: '#000000',
-                accent: '#3a86ff',
-                buttonText: '#ffffff',
-                borderColor: '#cccccc'
-            },
-            midnight: {
-                bgPrimary: '#0f172a',
-                bgSecondary: '#1e293b',
-                textPrimary: '#e2e8f0',
-                textSecondary: '#f8fafc',
-                accent: '#38bdf8',
-                buttonText: '#0f172a',
-                borderColor: '#334155'
-            },
-            forest: {
-                bgPrimary: '#1e3a29',
-                bgSecondary: '#2d503c',
-                textPrimary: '#e0f2e9',
-                textSecondary: '#ffffff',
-                accent: '#7fcd91',
-                buttonText: '#1e3a29',
-                borderColor: '#3a6a4b'
-            },
-            sunset: {
-                bgPrimary: '#2b2118',
-                bgSecondary: '#3d2c1e',
-                textPrimary: '#f9e0c9',
-                textSecondary: '#ffffff',
-                accent: '#ff9e5c',
-                buttonText: '#2b2118',
-                borderColor: '#5c4535'
-            },
-            'high-contrast': {
-                bgPrimary: '#000000',
-                bgSecondary: '#1a1a1a',
-                textPrimary: '#ffffff',
-                textSecondary: '#ffffff',
-                accent: '#ffff00',
-                buttonText: '#000000',
-                borderColor: '#ffffff'
-            }
-        };
-        
-        // Get color pickers
-        const bgPrimaryPicker = document.getElementById('bg-primary');
-        const bgSecondaryPicker = document.getElementById('bg-secondary');
-        const textPrimaryPicker = document.getElementById('text-primary');
-        const textSecondaryPicker = document.getElementById('text-secondary');
-        const accentPicker = document.getElementById('accent');
-        const buttonTextPicker = document.getElementById('button-text');
-        const borderColorPicker = document.getElementById('border-color');
-        
-        // Load saved theme or default
-        function loadTheme() {
-            const savedTheme = JSON.parse(localStorage.getItem('echoNoteTheme')) || defaultTheme;
-            
-            // Set color picker values
-            bgPrimaryPicker.value = savedTheme.bgPrimary;
-            bgSecondaryPicker.value = savedTheme.bgSecondary;
-            textPrimaryPicker.value = savedTheme.textPrimary;
-            textSecondaryPicker.value = savedTheme.textSecondary;
-            accentPicker.value = savedTheme.accent;
-            buttonTextPicker.value = savedTheme.buttonText;
-            borderColorPicker.value = savedTheme.borderColor;
-            
-            // Apply theme
-            applyTheme(savedTheme);
-        }
-        
-        // Apply theme to preview and document
-        function applyTheme(theme) {
-            // Create CSS variables
-            const root = document.documentElement;
-            root.style.setProperty('--bg-primary', theme.bgPrimary);
-            root.style.setProperty('--bg-secondary', theme.bgSecondary);
-            root.style.setProperty('--text-primary', theme.textPrimary);
-            root.style.setProperty('--text-secondary', theme.textSecondary);
-            root.style.setProperty('--accent', theme.accent);
-            root.style.setProperty('--button-text', theme.buttonText);
-            root.style.setProperty('--border-color', theme.borderColor);
-        }
-        
-        // Save theme to localStorage
-        function saveTheme() {
-            const theme = {
-                bgPrimary: bgPrimaryPicker.value,
-                bgSecondary: bgSecondaryPicker.value,
-                textPrimary: textPrimaryPicker.value,
-                textSecondary: textSecondaryPicker.value,
-                accent: accentPicker.value,
-                buttonText: buttonTextPicker.value,
-                borderColor: borderColorPicker.value
-            };
-            
-            try {
-                // Save to localStorage
-                const themeJSON = JSON.stringify(theme);
-                localStorage.setItem('echoNoteTheme', themeJSON);
-                
-                // Verify it was saved correctly
-                const savedTheme = localStorage.getItem('echoNoteTheme');
-                console.log('Saved theme in localStorage:', savedTheme);
-                
-                alert('Theme saved successfully! Changes will apply to all pages.');
-            } catch (error) {
-                console.error('Error saving theme:', error);
-                alert('Error saving theme: ' + error.message);
-            }
-        }
-        
-        // Reset to default theme
-        function resetTheme() {
-            localStorage.removeItem('echoNoteTheme');
-            loadTheme();
-        }
-        
-        // Event listeners for color pickers
-        bgPrimaryPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--bg-primary', this.value);
-        });
-        
-        bgSecondaryPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--bg-secondary', this.value);
-        });
-        
-        textPrimaryPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--text-primary', this.value);
-        });
-        
-        textSecondaryPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--text-secondary', this.value);
-        });
-        
-        accentPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--accent', this.value);
-        });
-        
-        buttonTextPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--button-text', this.value);
-        });
-        
-        borderColorPicker.addEventListener('input', function() {
-            document.documentElement.style.setProperty('--border-color', this.value);
-        });
-        
-        // Event listeners for preset buttons
-        document.querySelectorAll('.preset-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const themeName = this.dataset.theme;
-                const theme = presets[themeName];
-                
-                // Update color pickers
-                bgPrimaryPicker.value = theme.bgPrimary;
-                bgSecondaryPicker.value = theme.bgSecondary;
-                textPrimaryPicker.value = theme.textPrimary;
-                textSecondaryPicker.value = theme.textSecondary;
-                accentPicker.value = theme.accent;
-                buttonTextPicker.value = theme.buttonText;
-                borderColorPicker.value = theme.borderColor;
-                
-                // Apply theme
-                applyTheme(theme);
-            });
-        });
-        
-        // Save and reset buttons
-        document.getElementById('save-theme').addEventListener('click', saveTheme);
-        document.getElementById('reset-theme').addEventListener('click', resetTheme);
-        
-        // Initialize
-        loadTheme();
+document.addEventListener('DOMContentLoaded', async () => {
+  // default fallback
+  const defaultTheme = {
+    bgPrimary: '#212121',
+    bgSecondary: '#303030',
+    textPrimary: '#ececf1',
+    textSecondary: '#ffffff',
+    accent:      '#FCFCFD',
+    buttonText:  '#36395A',
+    borderColor: '#444'
+  };
+
+  // grab all the pickers into a map
+  const pickers = {
+    bgPrimary:   document.getElementById('bg-primary'),
+    bgSecondary: document.getElementById('bg-secondary'),
+    textPrimary: document.getElementById('text-primary'),
+    textSecondary: document.getElementById('text-secondary'),
+    accent:      document.getElementById('accent'),
+    buttonText:  document.getElementById('button-text'),
+    borderColor: document.getElementById('border-color'),
+  };
+
+  // helper to convert camelCase to CSS var name
+  function camelToVar(name) {
+    return '--' + name.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
+  }
+
+  // fetch the current theme from server
+  let theme;
+  try {
+    const resp = await fetch('/api/get_theme');
+    theme = (resp.ok ? await resp.json() : defaultTheme);
+  } catch {
+    theme = defaultTheme;
+  }
+
+  // apply theme to pickers & document
+  for (const [key, picker] of Object.entries(pickers)) {
+    picker.value = theme[key] || defaultTheme[key];
+    document.documentElement.style.setProperty(camelToVar(key), picker.value);
+    // live‐update on change
+    picker.addEventListener('input', () => {
+      document.documentElement.style.setProperty(camelToVar(key), picker.value);
     });
+  }
+
+  // preset buttons
+  const presets = {
+    default: defaultTheme,
+    light: {
+      bgPrimary:'#f5f5f5', bgSecondary:'#BDBDBD',
+      textPrimary:'#FFFFFF', textSecondary:'#000000',
+      accent:'#3a86ff', buttonText:'#ffffff', borderColor:'#cccccc'
+    },
+    midnight: {
+      bgPrimary:'#0f172a', bgSecondary:'#1e293b',
+      textPrimary:'#e2e8f0', textSecondary:'#f8fafc',
+      accent:'#38bdf8', buttonText:'#0f172a', borderColor:'#334155'
+    },
+    forest: {
+      bgPrimary:'#1e3a29', bgSecondary:'#2d503c',
+      textPrimary:'#e0f2e9', textSecondary:'#ffffff',
+      accent:'#7fcd91', buttonText:'#1e3a29', borderColor:'#3a6a4b'
+    },
+    sunset: {
+      bgPrimary:'#2b2118', bgSecondary:'#3d2c1e',
+      textPrimary:'#f9e0c9', textSecondary:'#ffffff',
+      accent:'#ff9e5c', buttonText:'#2b2118', borderColor:'#5c4535'
+    },
+    'high-contrast': {
+      bgPrimary:'#000000', bgSecondary:'#1a1a1a',
+      textPrimary:'#ffffff', textSecondary:'#ffffff',
+      accent:'#ffff00', buttonText:'#000000', borderColor:'#ffffff'
+    }
+  };
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.theme] || defaultTheme;
+      for (const [k,v] of Object.entries(p)) {
+        pickers[k].value = v;
+        document.documentElement.style.setProperty(camelToVar(k), v);
+      }
+    });
+  });
+
+  // reset button
+  document.getElementById('reset-theme').addEventListener('click', () => {
+    for (const [k,v] of Object.entries(defaultTheme)) {
+      pickers[k].value = v;
+      document.documentElement.style.setProperty(camelToVar(k), v);
+    }
+  });
+
+  // save button — POST back to /api/save_theme
+  document.getElementById('save-theme').addEventListener('click', async () => {
+    const payload = {};
+    for (const key of Object.keys(pickers)) {
+      payload[key] = pickers[key].value;
+    }
+    try {
+      const res = await fetch('/api/save_theme', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      alert('Theme saved for {{ current_user.username }}');
+    } catch(err) {
+      console.error('save_theme failed', err);
+      alert('Could not save theme: ' + err);
+    }
+  });
+});
 </script>
 {% endblock %}

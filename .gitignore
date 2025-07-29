@@ -30,3 +30,4 @@ env/
 sensitive-credentials/echonote-api-key.json
 
 .env
+client_secret.json

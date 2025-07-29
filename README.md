@@ -1,6 +1,8 @@
-# EchoNote – Voice-Powered Task Manager
+# EchoNote v2 – Voice-Powered Task Manager
 
 EchoNote is a Python-based web app that uses Google Speech-to-Text and Google Gemini AI to turn spoken input into organized tasks. Just speak your to-do list, and EchoNote will transcribe, extract, and save your tasks.
+
+You can now sync tasks directly to Google Calendar or Google Tasks with one click.
 
 ## General Info
 
@@ -8,18 +10,20 @@ This project was developed as part of the SEO Tech Developers Summer 2025 progra
 
 - Use speech recognition to capture user input
 - Parse natural language into structured data using AI
+- Sync tasks to Google Calendar or Google Tasks
 - Store and display tasks using a local database and Flask app
 
 ## Technologies
 
 This project uses:
 
-- Python 3.11+
-- Flask
-- SQLite + SQLAlchemy
-- Google Cloud Speech-to-Text API
-- Google Generative AI (Gemini)
-- HTML/CSS (Jinja templates)
+Python 3.11+
+Flask
+SQLite + SQLAlchemy
+Google Cloud Speech-to-Text API
+Google Generative AI (Gemini)
+Google Calendar & Google Tasks APIs
+HTML / CSS / Jinja
 
 ## Setup Instructions
 
