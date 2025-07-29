@@ -36,15 +36,31 @@
                     </div>
                     <div class="task-actions">
                         {% if not task.completed %}
-                        <button class="btn-done" data-task-id="{{ task.id }}"><i class="fa-solid fa-check"></i></button>
-                        {% else %}
-                        <button class="btn-undo" data-task-id="{{ task.id }}"><i class="fa-solid fa-rotate-left"></i></button>
-                        {% endif %}
-                        <button class="btn-edit" data-task-id="{{ task.id }}"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn-delete" data-task-id="{{ task.id }}"><i class="fa-solid fa-trash"></i></button>
-                        <button class="btn-sync" data-task-id="{{ task.id }}"><i class="fa-solid fa-calendar"></i></button>
-                        <button class="btn-sync-task" data-task-id="{{ task.id }}"><i class="fa-solid fa-list-check"></i></button>
+                        <button class="btn-done" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-check"></i>
+                            </button>
+                            
+                            {% else %}
+                            <button class="btn-undo" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            {% endif %}
+                            
+                            <button class="btn-edit" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-pen"></i>
+                            </button>
+                            
+                            <button class="btn-delete" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <button class="btn-sync" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-calendar"></i>
+                            </button>
+                            <button class="btn-sync-task" data-task-id="{{ task.id }}">
+                            <i class="fa-solid fa-list-check"></i>
+                            </button>
                     </div>
+                    <div class="task-waveform"></div>
                 </div>
                 {% endfor %}
             {% else %}
@@ -57,131 +73,262 @@
 
 {% block scripts %}
 <script>
-function convertTo24Hour(timeStr) {
-    if (!timeStr) return "";
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":").map(Number);
-    if (modifier === "PM" && hours < 12) hours += 12;
-    if (modifier === "AM" && hours === 12) hours = 0;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
+    function convertTo24Hour(timeStr) {
+        if (!timeStr) return "";
 
-function convertToDateInput(dateStr) {
-    if (!dateStr) return '';
-    const today = new Date();
-    let target = new Date();
-    if (dateStr.toLowerCase() === 'today') target = new Date();
-    else if (dateStr.toLowerCase() === 'tomorrow') target.setDate(today.getDate() + 1);
-    else {
-        const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        if (weekdays.includes(dateStr)) {
-            const targetDay = weekdays.indexOf(dateStr);
-            const diff = (targetDay - today.getDay() + 7) % 7 || 7;
-            target.setDate(today.getDate() + diff);
-        } else {
-            const parsed = new Date(dateStr + " " + today.getFullYear());
-            if (!isNaN(parsed)) target = parsed;
-        }
+        const [time, modifier] = timeStr.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+
+        if (modifier === "PM" && hours < 12) hours += 12;
+        if (modifier === "AM" && hours === 12) hours = 0;
+
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
-    return target.toISOString().split('T')[0];
-}
+    //converts date strings like "today", "tomorrow", or weekdays to a date input format
+    //wouldnt work if its says 7pm today. now this function strips the time and returns the date
+    function convertToDateInput(dateStr) {
+        if (!dateStr) return '';
 
-document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        let target = new Date();
 
-    // ✅ Sync to Google Calendar
-    document.querySelectorAll('.btn-sync').forEach(button => {
-        button.addEventListener('click', function () {
-            const taskItem = this.closest('.task-item');
-            const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
+        if (dateStr.toLowerCase() === 'today') {
+            target = new Date();
+        } else if (dateStr.toLowerCase() === 'tomorrow') {
+            target.setDate(today.getDate() + 1);
+        } else {
+            const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            if (weekdays.includes(dateStr)) {
+                const targetDay = weekdays.indexOf(dateStr);
+                const diff = (targetDay - today.getDay() + 7) % 7 || 7;
+                target.setDate(today.getDate() + diff);
+            } else {
+                const parsed = new Date(dateStr + " " + today.getFullYear());
+                if (!isNaN(parsed)) target = parsed;
+            }
+        }
 
-            fetch('/api/prefill_gcalen', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: taskContent })
-            })
-            .then(res => res.json())
-            .then(data => {
-                const date = convertToDateInput(data.start_date || data.due);
-                document.getElementById('popup-title').value = data.text || taskContent;
-                document.getElementById('popup-description').value = '';
-                document.getElementById('popup-start-date').value = date;
-                document.getElementById('popup-end-date').value = date;
-                document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
-                document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
-                document.getElementById('confirmation-popup').style.display = 'block';
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Failed to parse task for calendar.");
+        return target.toISOString().split('T')[0]; // returns 'YYYY-MM-DD'
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const recordButton = document.getElementById('btn-record');
+        const stopButton = document.getElementById('btn-stop');
+        const saveButton = document.getElementById('btn-save');
+        const transcriptArea = document.getElementById('transcript');
+        
+        let recorder;
+        let stream;
+        
+        // Initialize media recording
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(
+            mediaStream => {
+                stream = mediaStream;
+                recorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm'});
+                    chunks = [];
+
+                    const form = new FormData();
+                    form.append('audio', blob, 'recording.webm')
+
+                    try {
+                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                        const payload = await res.json();
+                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                        transcriptArea.value = payload.transcript;
+                    } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptArea.value = 'Error transcribing audio. Please try again.';
+                    }
+                };
+            }
+        ).catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        });
+        
+        //The popup for g-events
+        document.querySelectorAll('.btn-sync').forEach(button => {
+            button.addEventListener('click', function () {
+                const taskItem = this.closest('.task-item');
+                const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
+
+                //send to genai to extract structured info
+                fetch('/api/prefill_gcalen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: taskContent })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const date = convertToDateInput(data.start_date || data.due);
+                    //fill the popup using parsed task
+                    document.getElementById('popup-title').value = data.text || taskContent;
+                    document.getElementById('popup-description').value = '';
+                    document.getElementById('popup-start-date').value = date;
+                    document.getElementById('popup-end-date').value = date;
+                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
+                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
+                    document.getElementById('popup-recurrence').value = data.repeat || '';
+                    
+                    document.getElementById('confirmation-popup').style.display = 'block';
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to parse task for calendar.");
+                });
             });
         });
-    });
 
-    // ✅ Sync to Google Tasks
-    document.querySelectorAll('.btn-sync-task').forEach(button => {
-        button.addEventListener('click', function () {
-            const taskItem = this.closest('.task-item');
-            const taskContent = taskItem.querySelector('.task-content').innerText;
+        //popup for the g-tasks
+        document.querySelectorAll('.btn-sync-task').forEach(button => {
+            button.addEventListener('click', function () {
+                const taskItem = this.closest('.task-item');
+                const taskContent = taskItem.querySelector('.task-content').innerText;
+                
+                //send to genai to extract structured info
+                fetch('/api/prefill_gtask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: taskContent })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    //fill the popup using parsed task
+                    document.getElementById('task-title').value = data.text || taskContent;
+                    const dueDate = data.due || data.start_date || '';
+                    document.getElementById('task-due-date').value = convertToDateInput(dueDate);
+                    document.getElementById('task-popup').style.display = 'block';
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to parse task for Google Task.");
+                });
+            });
+        });
+
+        // Handle Google Task form submit
+        document.getElementById('task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('task-title').value;
+            const dueDate = document.getElementById('task-due-date').value;
 
             fetch('/api/google_task_create', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    title: taskContent,
-                    due_date: null
-                })
+                body: JSON.stringify({ title: title, due_date: dueDate })
             })
             .then(res => res.json())
             .then(data => {
                 alert("Task added to Google Tasks ✅");
+                document.getElementById('task-popup').style.display = 'none';
             })
             .catch(err => {
                 console.error(err);
                 alert("Failed to add to Google Tasks");
             });
         });
-    });
 
-    // ✅ Handle confirm form submit for Calendar
-    document.getElementById('confirm-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const title = document.getElementById('popup-title').value;
-        const description = document.getElementById('popup-description').value;
-        const startDate = document.getElementById('popup-start-date').value;
-        const endDate = document.getElementById('popup-end-date').value;
-        const startTime = document.getElementById('popup-start-time').value;
-        const endTime = document.getElementById('popup-end-time').value;
-
-        const startDateTime = `${startDate}T${startTime}:00`;
-        const endDateTime = `${endDate}T${endTime}:00`;
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        fetch('/api/google_event_create', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                title: title,
-                description: description,
-                start: startDateTime,
-                end: endDateTime,
-                timezone: tz
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert("Event added to Google Calendar ✅");
-            document.getElementById('confirmation-popup').style.display = 'none';
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Failed to add event to Google Calendar");
+        // Cancel button for task popup
+        document.getElementById('cancel-task-btn').addEventListener('click', function() {
+            document.getElementById('task-popup').style.display = 'none';
         });
-    });
 
-    document.getElementById('cancel-btn').addEventListener('click', function() {
-        document.getElementById('confirmation-popup').style.display = 'none';
-    });
+        // Record button
+        recordButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'inactive') {
+                recorder.start();
+                recordButton.classList.add('recording');
+                stopButton.disabled = false;
+            }
+        });
 
+        // Stop button
+        stopButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'recording') {
+                recorder.stop();
+                recordButton.classList.remove('recording');
+                stopButton.disabled = true;
+                
+                // Stop all tracks
+                if (stream) {
+                    stream.getTracks().forEach(track => {
+                        if (track.readyState === 'live') {
+                            track.stop();
+                        }
+                    });
+                }
+                
+                // Reinitialize for next recording
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(
+                    mediaStream => {
+                        stream = mediaStream;
+                        recorder = new MediaRecorder(stream);
+                        let chunks = [];
+
+                        recorder.ondataavailable = e => chunks.push(e.data);
+                        recorder.onstop = async () => {
+                            const blob = new Blob(chunks, { type: 'audio/webm'});
+                            chunks = [];
+
+                            const form = new FormData();
+                            form.append('audio', blob, 'recording.webm')
+
+                            try {
+                                const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                                const payload = await res.json();
+                                if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                                transcriptArea.value = payload.transcript;
+                            } catch (error) {
+                                console.error('Error transcribing audio:', error);
+                                transcriptArea.value = 'Error transcribing audio. Please try again.';
+                            }
+                        };
+                    }
+                ).catch(console.error);
+            }
+        });
+
+        // Save button
+        saveButton.addEventListener('click', async function() {
+            const transcript = transcriptArea.value.trim();
+            
+            if (!transcript) {
+                alert('Please record something first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/save_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcript
+                    })
+                });
+                
+                if (response.ok) {
+                    // Clear the transcript area
+                    transcriptArea.value = '';
+                    
+                    // Refresh the page to show the new task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save task');
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task: ' + error.message);
+            }
+        });
+    
     // ✅ Handle undo button (mark task as incomplete)
     document.querySelectorAll('.btn-undo').forEach(button => {
         button.addEventListener('click', async function() {
@@ -241,29 +388,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
-</script>
+});   
 
-<!-- ✅ Popup for Events -->
-<div id="confirmation-popup" style="display:none;" class="popup-overlay">
+</script>
+<div id="confirmation-popup" style="display: none;" class="popup-overlay">
   <div class="popup-box">
     <h3>Confirm Event</h3>
     <form id="confirm-form">
       <label for="popup-title">Title:</label>
-      <input type="text" id="popup-title" required />
+      <input type="text" id="popup-title" name="title" required />
+    
       <label for="popup-description">Description:</label>
-      <textarea id="popup-description"></textarea>
+      <textarea id="popup-description" name="description"></textarea>
+
       <label for="popup-start-date">Start Date:</label>
-      <input type="date" id="popup-start-date" required />
+      <input type="date" id="popup-start-date" name="start_date" required />
+
       <label for="popup-start-time">Start Time:</label>
-      <input type="time" id="popup-start-time" required />
+      <input type="time" id="popup-start-time" name="start_time" required />
+
       <label for="popup-end-date">End Date:</label>
-      <input type="date" id="popup-end-date" required />
+      <input type="date" id="popup-end-date" name="end_date" required />
+
       <label for="popup-end-time">End Time:</label>
-      <input type="time" id="popup-end-time" required />
+      <input type="time" id="popup-end-time" name="end_time" required />
+
+      <label for="popup-recurrence">Recurrence:</label>
+      <select id="popup-recurrence" name="recurrence">
+        <option value="">None</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Weekdays</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+
       <div class="form-buttons">
         <button type="submit">Confirm & Add</button>
         <button type="button" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="task-popup" style="display: none;" class="popup-overlay">
+  <div class="popup-box">
+    <h3>Confirm Task</h3>
+    <form id="task-form">
+      <label for="task-title">Title:</label>
+      <input type="text" id="task-title" name="title" required />
+
+      <label for="task-due-date">Due Date:</label>
+      <input type="date" id="task-due-date" name="due_date" />
+
+      <div class="form-buttons">
+        <button type="submit">Confirm & Add</button>
+        <button type="button" id="cancel-task-btn">Cancel</button>
       </div>
     </form>
   </div>
