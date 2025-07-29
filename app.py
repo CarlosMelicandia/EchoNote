@@ -320,6 +320,11 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # For local dev without HTTPS
 @app.route("/authorize")
 def authorize():
     session.clear()
+
+    # ✅ Debug: See what redirect URL is being generated
+    generated_redirect = url_for("oauth2callback", _external=True)
+    print("DEBUG: Generated redirect URI ->", generated_redirect)
+
     flow = Flow.from_client_config(
         {
             "web": {
@@ -331,15 +336,23 @@ def authorize():
             }
         },
         scopes=SCOPES,
-        redirect_uri=url_for("oauth2callback", _external=True)
+        redirect_uri=generated_redirect  # use what was generated
     )
     auth_url, _ = flow.authorization_url(prompt="consent")
     return redirect(auth_url)
 
 @app.route("/oauth2callback")
 def oauth2callback():
-    flow = Flow.from_client_secrets_file(
-        "client_secret.json",
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uris": ["http://127.0.0.1:5000/oauth2callback"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token"
+            }
+        },
         scopes=SCOPES,
         redirect_uri=url_for("oauth2callback", _external=True)
     )
