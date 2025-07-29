@@ -56,57 +56,140 @@ function highlightNav() {
   });
 }
 
-//audio recording functionality
-let mediaRecorder, audioChunks = [];
-
-function initRecording() {
-  const btnRecord = document.getElementById('btn-record');
-  const btnStop   = document.getElementById('btn-stop');
-  const transcriptArea = document.getElementById('transcript');
-
-  btnRecord.addEventListener('click', async () => {
-    // ask for mic
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.addEventListener('dataavailable', e => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    });
-    mediaRecorder.addEventListener('stop', async () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      const form = new FormData();
-      form.append('audio', blob, 'recording.webm');
-
-      try {
-        const resp = await fetch('/api/transcribe', {
-          method: 'POST',
-          body: form
-        });
-        if (!resp.ok) throw new Error('Transcription failed ' + resp.status);
-        const { transcript } = await resp.json();
-        transcriptArea.value = transcript;
-      } catch (err) {
-        console.error(err);
-        alert('Transcription error: ' + err.message);
-      }
-    });
-
-    mediaRecorder.start();
-    btnRecord.disabled = true;
-    btnStop.disabled = false;
-  });
-
-  btnStop.addEventListener('click', () => {
-    mediaRecorder.stop();
-    btnStop.disabled = true;
-    btnRecord.disabled = false;
-  });
-}
-
-
 // once the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+
+//start recording
+    const recordButton = document.getElementById('btn-record');
+    const stopButton = document.getElementById('btn-stop');
+    const saveButton = document.getElementById('btn-save');
+    const transcriptArea = document.getElementById('transcript');
+        
+    let recorder;
+    let stream;
+
+// Initialize media recording
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(
+        mediaStream => {
+            stream = mediaStream;
+            recorder = new MediaRecorder(stream);
+            let chunks = [];
+
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/webm'});
+                chunks = [];
+
+                const form = new FormData();
+                form.append('audio', blob, 'recording.webm')
+
+                try {
+                    const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                    const payload = await res.json();
+                    if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                    transcriptArea.value = payload.transcript;
+                } catch (error) {
+                    console.error('Error transcribing audio:', error);
+                    transcriptArea.value = 'Error transcribing audio. Please try again.';
+                }
+            };
+        }
+        ).catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Could not access microphone. Please check permissions.');
+        });
+
+        // Record button
+        recordButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'inactive') {
+                recorder.start();
+                recordButton.classList.add('recording');
+                stopButton.disabled = false;
+            }
+        });
+
+        // Stop button
+        stopButton.addEventListener('click', function() {
+            if (recorder && recorder.state === 'recording') {
+                recorder.stop();
+                recordButton.classList.remove('recording');
+                stopButton.disabled = true;
+                
+                // Stop all tracks
+                if (stream) {
+                    stream.getTracks().forEach(track => {
+                        if (track.readyState === 'live') {
+                            track.stop();
+                        }
+                    });
+                }
+                
+        // Reinitialize for next recording
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(
+            mediaStream => {
+                stream = mediaStream;
+                recorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm'});
+                    chunks = [];
+
+                    const form = new FormData();
+                    form.append('audio', blob, 'recording.webm')
+
+                    try {
+                        const res = await fetch('/api/transcribe', { method: 'POST', body: form});
+                        const payload = await res.json();
+                        if (!res.ok) throw new Error(payload.error || "Transcription failed");
+                        transcriptArea.value = payload.transcript;
+                        } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptArea.value = 'Error transcribing audio. Please try again.';
+                    }
+                    };
+                }
+            ).catch(console.error);
+        }
+    });  
+    
+    // Save button
+        saveButton.addEventListener('click', async function() {
+            const transcript = transcriptArea.value.trim();
+            
+            if (!transcript) {
+                alert('Please record something first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/save_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcript
+                    })
+                });
+                
+                if (response.ok) {
+                    // Clear the transcript area
+                    transcriptArea.value = '';
+                    
+                    // Refresh the page to show the new task
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save task');
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task: ' + error.message);
+            }
+        });
+
     loadTheme();
     highlightNav();
   

@@ -87,35 +87,6 @@ function convertToDateInput(dateStr) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // ✅ Save button logic
-    const saveButton = document.getElementById('btn-save');
-    const transcriptArea = document.getElementById('transcript');
-
-    saveButton.addEventListener('click', async function() {
-        const transcript = transcriptArea.value.trim();
-        if (!transcript) {
-            alert('Please record or type something before saving.');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/save_task', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ transcript: transcript })
-            });
-
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to save task');
-
-            alert('Task saved ✅');
-            transcriptArea.value = '';
-            window.location.reload();
-        } catch (err) {
-            console.error(err);
-            alert('Error saving task: ' + err.message);
-        }
-    });
 
     // ✅ Sync to Google Calendar
     document.querySelectorAll('.btn-sync').forEach(button => {
