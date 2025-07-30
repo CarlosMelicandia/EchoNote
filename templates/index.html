@@ -239,8 +239,8 @@
                     document.getElementById('popup-description').value = '';
                     document.getElementById('popup-start-date').value = date;
                     document.getElementById('popup-end-date').value = date;
-                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time) || '09:00';
-                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time) || '10:00';
+                    document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
+                    document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
                     document.getElementById('popup-recurrence').value = data.repeat || '';
                     
                     document.getElementById('confirmation-popup').style.display = 'block';
@@ -416,42 +416,6 @@
                         };
                     }
                 ).catch(console.error);
-            }
-        });
-
-        // Save button
-        saveButton.addEventListener('click', async function() {
-            const transcript = transcriptArea.value.trim();
-            
-            if (!transcript) {
-                alert('Please record something first.');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/save_task', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        transcript: transcript
-                    })
-                });
-                
-                if (response.ok) {
-                    // Clear the transcript area
-                    transcriptArea.value = '';
-                    
-                    // Refresh the page to show the new task
-                    window.location.reload();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to save task');
-                }
-            } catch (error) {
-                console.error('Error saving task:', error);
-                alert('Error saving task: ' + error.message);
             }
         });
     
