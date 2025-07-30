@@ -101,7 +101,7 @@
     cursor: pointer;
     display: inline-flex;
     font-family: "JetBrains Mono", monospace;
-    height: 48px;
+    height: 36px;
     justify-content: center;
     line-height: 1;
     list-style: none;
@@ -174,7 +174,7 @@
     cursor: pointer;
     display: inline-flex;
     font-family: "JetBrains Mono", monospace;
-    height: 48px;
+    height: 36px;
     justify-content: center;
     line-height: 1;
     list-style: none;
@@ -835,4 +835,19 @@ textarea:focus {
   margin-bottom: 10px;
   width: 100%;
   text-align: center;
+}
+
+.navbar i {
+  font-size: 20px;
+  color: var(--button-text);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.navbar a:hover i {
+  transform: scale(1.1);
+  color: var(--accent);
+}
+
+.navbar a.active i {
+  color: var(--accent);
 }
