@@ -26,8 +26,9 @@
             {% if tasks %}
                 {% for task in tasks %}
                 <div class="task-item {% if task.completed %}completed{% endif %}" 
-                    data-task-id="{{ task.id }}">
-                    
+                    data-task-id="{{ task.id }}"
+                    data-raw="{{ task.raw_text }}">
+
                     <div class="task-content">
                         {{ task.name }}
                         {% if task.due_date %} — <strong>Due:</strong> {{ task.due_date }}{% endif %}
@@ -211,7 +212,7 @@
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
                 const taskId = taskItem.dataset.taskId;
-                const taskContent = taskItem.querySelector('.task-content').innerText;
+                const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
                 
                 // Extract clean task name (without due date or completion status)
                 let cleanTaskContent = taskContent;
@@ -257,7 +258,7 @@
             button.addEventListener('click', function () {
                 const taskItem = this.closest('.task-item');
                 const taskId = taskItem.dataset.taskId;
-                const taskContent = taskItem.querySelector('.task-content').innerText;
+                const taskContent = taskItem.dataset.raw || taskItem.querySelector('.task-content').innerText;
                 
                 // Extract clean task name (without due date or completion status)
                 let cleanTaskContent = taskContent;

@@ -239,7 +239,7 @@ def save_task():
                 
             print(f"Trying to save task: {task_text} (Due: {due_date})")
             if task_text:
-                create_task(user_id=current_user.id, name=task_text, due_date=due_date)
+                create_task(user_id=current_user.id, name=task_text, due_date=due_date, raw_text=transcript)
                 count += 1
         db.session.commit()
         print(f"Saved {count} tasks to database")
