@@ -101,7 +101,7 @@
     cursor: pointer;
     display: inline-flex;
     font-family: "JetBrains Mono", monospace;
-    height: 48px;
+    height: 36px;
     justify-content: center;
     line-height: 1;
     list-style: none;
@@ -174,7 +174,7 @@
     cursor: pointer;
     display: inline-flex;
     font-family: "JetBrains Mono", monospace;
-    height: 48px;
+    height: 36px;
     justify-content: center;
     line-height: 1;
     list-style: none;
@@ -674,4 +674,180 @@ textarea:focus {
   background-color: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+}
+
+.login-container {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 30px;
+  max-width: 400px;
+  width: 100%;
+  margin: 40px auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-container h2 {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+.login-container .form-group {
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-container label {
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.login-container input[type="text"],
+.login-container input[type="password"] {
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+}
+
+.login-container button[type="submit"] {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.login-container p {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.login-container p a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Flash messages */
+.login-container .flash-success {
+  background-color: rgba(52, 199, 89, 0.2);
+  color: #34c759;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-container .flash-error {
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.signup-container {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 30px;
+  max-width: 400px;
+  width: 100%;
+  margin: 40px auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.signup-container h2 {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+.signup-container .form-group {
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.signup-container label {
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.signup-container input[type="text"],
+.signup-container input[type="password"] {
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.signup-container input:focus {
+  border-color: var(--accent);
+}
+
+.signup-container button[type="submit"] {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.signup-container p {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.signup-container p a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.signup-container .flash-success {
+  background-color: rgba(52, 199, 89, 0.2);
+  color: #34c759;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.signup-container .flash-error {
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.navbar i {
+  font-size: 20px;
+  color: var(--button-text);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.navbar a:hover i {
+  transform: scale(1.1);
+  color: var(--accent);
+}
+
+.navbar a.active i {
+  color: var(--accent);
 }
