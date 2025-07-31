@@ -167,6 +167,21 @@
         return target.toISOString().split('T')[0]; // returns 'YYYY-MM-DD'
     }
 
+    function setDateField(inputElement, dateValue) {
+    if (!dateValue) {
+        inputElement.value = '';
+        return;
+    }
+
+    // If it's already in YYYY-MM-DD format, use it directly
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        inputElement.value = dateValue;
+    } else {
+        // Otherwise, convert it using helper
+        inputElement.value = convertToDateInput(dateValue);
+    }
+}
+
     document.addEventListener('DOMContentLoaded', function() {
         const recordButton = document.getElementById('btn-record');
         const stopButton = document.getElementById('btn-stop');
@@ -228,22 +243,25 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        task_id: taskId,
-                        text: cleanTaskContent 
+                        task_id: taskId
                     })
                 })
                 .then(res => res.json())
                 .then(data => {
-                    const date = convertToDateInput(data.start_date || data.due);
-                    // Fill the popup using parsed task
+                    // Title
                     document.getElementById('popup-title').value = data.text || cleanTaskContent;
-                    document.getElementById('popup-description').value = '';
-                    document.getElementById('popup-start-date').value = date;
-                    document.getElementById('popup-end-date').value = date;
+
+                    // Dates
+                    setDateField(document.getElementById('popup-start-date'), data.start_date || data.due);
+                    setDateField(document.getElementById('popup-end-date'), data.end_date || data.due);
+
+                    // Times
                     document.getElementById('popup-start-time').value = convertTo24Hour(data.start_time);
                     document.getElementById('popup-end-time').value = convertTo24Hour(data.end_time);
+
+                    // Recurrence
                     document.getElementById('popup-recurrence').value = data.repeat || '';
-                    
+
                     document.getElementById('confirmation-popup').style.display = 'block';
                 })
                 .catch(err => {

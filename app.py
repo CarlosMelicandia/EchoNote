@@ -224,7 +224,7 @@ def save_task():
             return jsonify(error='Transcript is required'), 400
 
         transcript = data["transcript"]
-        parsed_tasks = task_parser.parse_transcript(transcript)
+        parsed_tasks = task_parser.prefill_gcalen(transcript, None, None, None, None, None)
 
         if not isinstance(parsed_tasks, list):
             return jsonify(error="Failed to parse tasks"), 500
@@ -233,13 +233,20 @@ def save_task():
         for task_data in parsed_tasks:
             task_text = task_data.get("text")
             due_date = task_data.get("due")
+            start_date = task_data.get("start_date")
+            end_date = task_data.get("end_date")
+            start_time = task_data.get("start_time")
+            end_time = task_data.get("end_time")
+            recurrence = task_data.get("recurrence")
             
             if due_date and isinstance(due_date, str):
                 due_date = due_date.strip().capitalize()
                 
             print(f"Trying to save task: {task_text} (Due: {due_date})")
             if task_text:
-                create_task(user_id=current_user.id, name=task_text, due_date=due_date, raw_text=transcript)
+                create_task(user_id=current_user.id, name=task_text, due_date=due_date, raw_text=task_text,
+                            start_date=start_date, end_date=end_date, start_time=start_time,
+                            end_time=end_time, recurrence=recurrence)
                 count += 1
         db.session.commit()
         print(f"Saved {count} tasks to database")
@@ -279,40 +286,45 @@ def delete_task_route(task_id):
 
 #route to prefill a google task event
 @app.route("/api/prefill_gtask", methods=["POST"])
+@login_required
 def prefill_gtask():
     data = request.get_json()
-    raw_text = data.get("text", "")
+    task_id = data.get("task_id")
 
-    if not raw_text:
-        return jsonify({"error": "Missing task text"}), 400
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    if not task:
+        return jsonify(error="Task not found"), 404
 
-    parsed = task_parser.prefill_gtask(raw_text)
-
-    if parsed and isinstance(parsed, list) and len(parsed) > 0:
-        return jsonify(parsed[0])  # Just return the first parsed task
-    else:
-        return jsonify({"error": "No task extracted"}), 400
+    #if due date is missing but start date is there, use start date
+    due_date = task.due_date
+    if not due_date and task.start_date:
+        due_date = task.start_date
+    
+    return jsonify({
+        "text": task.name,
+        "due_date": task.due_date or ""
+    })
 
 #route to prefill a google calendar event
 @app.route("/api/prefill_gcalen", methods=["POST"])
+@login_required
 def prefill_gcalen():
     data = request.get_json()
-    raw_text = data.get("text", "")
-    start_date = data.get("start_date", "")
-    end_date = data.get("end_date", "")
-    start_time = data.get("start_time", "")
-    end_time = data.get("end_time", "")
-    due_date = data.get("due_date", "")
+    task_id = data.get("task_id")
 
-    if not raw_text:
-        return jsonify({"error": "Missing event text"}), 400
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    if not task:
+        return jsonify(error="Task not found"), 404
 
-    parsed = task_parser.prefill_gcalen(raw_text, start_date, end_date, start_time, end_time, due_date)
-
-    if parsed and isinstance(parsed, list) and len(parsed) > 0:
-        return jsonify(parsed[0])  # Just return the first parsed task
-    else:
-        return jsonify({"error": "No event extracted"}), 400
+    return jsonify({
+        "text": task.name,
+        "description": "",  # optional
+        "start_date": task.start_date or "",
+        "start_time": task.start_time or "",
+        "end_date": task.end_date or "",
+        "end_time": task.end_time or "",
+        "recurrence": task.recurrence or ""
+    })
 
 SCOPES = [
     "https://www.googleapis.com/auth/tasks",

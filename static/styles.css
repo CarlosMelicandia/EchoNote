@@ -18,7 +18,7 @@
   
   body {
     margin: 0;
-    font-family: 'Comic Sans MS', 'Segoe Script', cursive;
+    font-family: 'Verdana', 'Segoe Script', cursive;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     display: flex;
@@ -100,7 +100,7 @@
     color: var(--button-text);
     cursor: pointer;
     display: inline-flex;
-    font-family: 'Comic Sans MS', 'Segoe Script', cursive;
+    font-family: 'Verdana', 'Segoe Script', cursive;
     height: 36px;
     justify-content: center;
     line-height: 1;
@@ -173,7 +173,7 @@
     color: var(--button-text);
     cursor: pointer;
     display: inline-flex;
-    font-family: 'Comic Sans MS', 'Segoe Script', cursive;
+    font-family: 'Verdana', 'Segoe Script', cursive;
     height: 36px;
     justify-content: center;
     line-height: 1;
@@ -576,7 +576,7 @@
 	overflow:hidden;
 	background-color:#FFF;
 	color:#222;
-	font-family: 'Comic Sans MS', 'Segoe Script', cursive;
+	font-family: 'Verdana', 'Segoe Script', cursive;
 	font-weight:normal;
 	font-size:24px;
 	resize:none;
