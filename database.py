@@ -49,6 +49,11 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = db.Column(db.String(100), nullable=True)
     raw_text = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.String(100), nullable=True)
+    end_date = db.Column(db.String(100), nullable=True)
+    start_time = db.Column(db.String(50), nullable=True)
+    end_time = db.Column(db.String(50), nullable=True)
+    recurrence = db.Column(db.String(50), nullable=True)  
 
     def __repr__(self):
         return (f"<Task(id={self.id}, user_id={self.user_id}, "
@@ -56,8 +61,11 @@ class Task(db.Model):
 
 # CRUD operations for Tasks
 
-def create_task(user_id: int, name: str, due_date: Optional[str] = None, raw_text: Optional[str] = None) -> Task:
-    task = Task(user_id=user_id, name=name, due_date=due_date, raw_text=raw_text)
+def create_task(user_id: int, name: str, due_date: Optional[str] = None, raw_text: Optional[str] = None,
+                start_date: Optional[str] = None, end_date: Optional[str] = None, start_time: Optional[str] = None, end_time: Optional[str] = None, recurrence: Optional[str] = None) -> Task:
+    task = Task(user_id=user_id, name=name, due_date=due_date, raw_text=raw_text,
+                start_date=start_date, end_date=end_date,
+                start_time=start_time, end_time=end_time, recurrence=recurrence)
     db.session.add(task)
     db.session.commit()
     return task
